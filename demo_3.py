@@ -17,19 +17,18 @@ for i in QA.QA_fetch_stock_block_adv().block_name:print(i)
 # 取得股票信息
 infos = QA.QA_fetch_stock_list_adv()
 
-
 stock_date1 =QA.QA_fetch_stock_day_adv(codes, '2019-01-02',)
-stock_date2 =QA.QA_fetch_stock_day_adv(codes, '2019-05-10')
+stock_date2 =QA.QA_fetch_stock_day_adv(codes, '2019-06-14')
 
-stock_date =QA.QA_fetch_stock_day_adv(codes, '2019-01-02','2019-05-10').to_hfq()
+stock_date =QA.QA_fetch_stock_day_adv(codes, '2019-01-02','2019-06-14').to_hfq()
 
 # 计算总回报
 stock_start = stock_date.data.loc['2019-01-02'].reset_index().set_index('code')["close"]
-stock_diff = (stock_date.data.loc['2019-05-10'].reset_index().set_index('code')["close"] - stock_start)/stock_start*100
+stock_diff = (stock_date.data.loc['2019-06-14'].reset_index().set_index('code')["close"] - stock_start)/stock_start*100
 
 # 计算指数回报
-index =QA.QA_fetch_index_day_adv('000001', '2019-01-02', '2019-05-10').data
-index_diff = (index.loc['2019-05-10']["close"].values[0] -
+index =QA.QA_fetch_index_day_adv('000001', '2019-01-02', '2019-06-14').data
+index_diff = (index.loc['2019-06-14']["close"].values[0] -
               index.loc['2019-01-03']["close"].values[0])/index.loc['2019-01-03']["close"].values[0]*100
 
 # 添加股票名称

@@ -14,6 +14,7 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.stats.diagnostic  import acorr_ljungbox
 from arch import arch_model
 
+
 ##dataBase                 ###########
 s0001 = {}
 days = {}

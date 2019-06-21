@@ -10,8 +10,8 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 import matplotlib.pyplot as plt
 
 
-data =QA.QA_fetch_stock_day_adv(['000001', '000002'],'2018-05-09','2018-05-20')
-data_forbacktest=data.select_time('2018-05-09','2018-05-18')#.data
+data =QA.QA_fetch_stock_day_adv(['000001', '000002'],'2018-04-09','2018-05-20')
+data_forbacktest=data.select_time('2018-04-09','2018-05-18')#.data
 items = data_forbacktest.panel_gen.send(None) #基于日面板迭代器
 item = items.security_gen.send(None) #基于代码的迭代器
 item.open[0]
