@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 # result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
 
 codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-data =QA.QA_fetch_stock_day_adv(codes[50:60],'2017-01-05','2017-12-25').to_hfq()
+data =QA.QA_fetch_stock_day_adv(codes[1:80],'2017-01-05','2017-12-25').to_hfq()
 
 
 # data =QA.QA_fetch_stock_day_adv(['002415','601155','000735','300558'],'2017-01-05','2017-12-25').to_hfq()
@@ -75,6 +75,7 @@ m.normal_min_var_weights
 m.show_marchenko_pdf_plot()
 m.show_filtered_compare_plot()
 m.show_weights_compare_plot()
+m.show_all_plot()
 
 class marchenko_pastur_optimize:
     def __init__(self, codes_dates_df, compare_df=None):
@@ -87,6 +88,7 @@ class marchenko_pastur_optimize:
         self.data = codes_dates_df
         self.origin_data_compare = compare_df
         self.sigma = 1
+        self.only_keep_max_side=True
         N,T = lgR_mat.shape
         self.lanbda = T/N
 
@@ -102,31 +104,43 @@ class marchenko_pastur_optimize:
         self.filt_min_var_weights = None
         self.normal_min_var_weights = None
 
-
+    # 马尔琴科分布理论上界
+    def marchenko_pastur_maxmum(self, lanbda, sigma=1):
+        return np.power(sigma*sigma*(1 + np.sqrt(lanbda)),2)
+    # 马尔琴科分布理论下界
+    def marchenko_pastur_minmum(self, lanbda, sigma=1):
+        return np.power(sigma*sigma*(1 - np.sqrt(lanbda)),2)
     # Definition of the Marchenko-Pastur density
     def marchenko_pastur_pdf(self, x, lanbda, sigma=1):
-        b=np.power(sigma*sigma*(1 + np.sqrt(lanbda)),2) # Largest eigenvalue
-        a=np.power(sigma*sigma*(1 - np.sqrt(lanbda)),2)# Smallest eigenvalue
+        b=self.marchenko_pastur_maxmum(lanbda, sigma) # Largest eigenvalue
+        a=self.marchenko_pastur_minmum(lanbda, sigma)# Smallest eigenvalue
         return (1/(2*np.pi*sigma*sigma*lanbda*x))*np.sqrt((b-x)*(x-a))*(0 if (x > b or x <a ) else 1)
 
-    # 马尔琴科分布理论上界
-    def marchenko_pastur_supremum(self, lanbda, sigma=1):
-        return np.power(sigma*sigma*(1 + np.sqrt(lanbda)),2)
 
-    def fit(self, sigma=1):
+    def fit(self, sigma=1, only_keep_max_side=True):
+        """only_keep_max_side 默认过滤掉马尔琴科分布内及其左边的数据。
+        当only_keep_max_side=false时，马尔琴科分布两侧的信号将被保留。
+        """
         self.sigma = sigma
+        self.only_keep_max_side=only_keep_max_side
         self.corMat = np.mat(self.data.interpolate().corr())
         # 求特征值和特征向量,特征向量是按列放的，即一列代表一个特征向量
         self.eigVals, self.eigVects=np.linalg.eig(self.corMat)
 
-        # 求马尔琴科分布理论上界
-        max_theoretical_eval = self.marchenko_pastur_supremum(self.lanbda, self.sigma)
+        # 求马尔琴科分布理论边界
+        max_theoretical_eval = self.marchenko_pastur_maxmum(self.lanbda, self.sigma)
 
         # Filter the eigenvalues out
         eigVals_filter = self.eigVals.copy()
-        eigVals_filter[eigVals_filter <= max_theoretical_eval] = 0
+        if only_keep_max_side:
+            eigVals_filter[eigVals_filter <= max_theoretical_eval] = 0
+        else:
+            min_theoretical_eval = self.marchenko_pastur_minmum(self.lanbda, self.sigma)
+            eigVals_filter[(eigVals_filter <= max_theoretical_eval) & (eigVals_filter >= min_theoretical_eval)] = 0
+
 
         self.filtered_matrix = np.dot(self.eigVects, np.dot(np.diag(eigVals_filter), self.eigVects.T))
+        np.fill_diagonal(self.filtered_matrix, 1)
 
         # 求标准差
         variances = np.diag(np.cov(self.data,rowvar=0))
@@ -197,10 +211,10 @@ class marchenko_pastur_optimize:
         ax = plt.subplot(122)
         plt.title("Filtered")
         a = ax.imshow(self.filtered_matrix)
-        cbar = f.colorbar(a, ticks=[-1, 0, 1])
+        # cbar = f.colorbar(a, ticks=[-1, 0, 1])
         plt.show()
 
-     # 显示过滤前权重图和过滤后图
+    # 显示过滤前权重图和过滤后图
     def show_weights_compare_plot(self):
         if self.fitted == False:
             raise Exception("fit first")
@@ -225,4 +239,52 @@ class marchenko_pastur_optimize:
         plt.title('Filtered Minimum Variance')
         plt.show()
 
+    # 显示所有图
+    def show_all_plot(self):
+        if self.fitted == False:
+            raise Exception("fit first")
+        if isinstance(self.origin_data_compare, type(None)):
+            raise  Exception("compare_df is None, the plot need this param")
 
+
+        title = "σ:"+ str(self.sigma)\
+                + "     λ:"+ str(self.lanbda)\
+                + "     only_keep_max_side:" + str(self.only_keep_max_side)
+        fig = plt.figure(title, figsize=(8,9))
+        fig.set_tight_layout(True)
+
+        ax  = fig.add_subplot(411)
+        ax.set_autoscale_on(True)
+        ax.hist(self.eigVals, density=True, bins=20) # Histogram the eigenvalues
+
+        x = np.linspace(0.0011 , 12 , 5000)
+        f = np.vectorize(lambda x : self.marchenko_pastur_pdf(x,self.lanbda,sigma=self.sigma))
+        ax.plot(x,f(x), linewidth=4, color = 'r')
+
+        ###################
+        ax = plt.subplot(423)
+        ax.imshow(self.corMat)
+        plt.title("Original")
+        ax = plt.subplot(424)
+        plt.title("Filtered")
+        a = ax.imshow(self.filtered_matrix)
+        # cbar = f.colorbar(a, ticks=[-1, 0, 1])
+
+        ax = plt.subplot(413)
+        min_var_portfolio = pd.DataFrame(data= self.normal_min_var_weights,
+                                         columns = ['Investment Weight'],
+                                         index = self.origin_data_compare.columns.values.tolist())
+        min_var_portfolio.plot(kind = 'bar', ax = ax)
+        plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+        plt.title('Minimum Variance')
+
+        ax = plt.subplot(414)
+        filt_min_var_portfolio = pd.DataFrame(data= self.filt_min_var_weights,
+                                         columns = ['Investment Weight'],
+                                         index = self.data.columns.values.tolist())
+        filt_min_var_portfolio.plot(kind = 'bar', ax = ax)
+        plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=True)
+        plt.title('Filtered Minimum Variance')
+
+        plt.subplots_adjust(hspace=0.4)
+        plt.show()
