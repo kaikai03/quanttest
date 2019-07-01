@@ -33,7 +33,7 @@ csv_data = pd.read_csv(filename, engine='python')
 
 for index, row in csv_data.iterrows():
     print(row['病理报告'])
-    csv_data.iloc[index, 3] = reqe(row['病理报告'])
+    csv_data.iloc[index, 4] = reqe(row['病理报告'])
 
 
 csv_data.to_excel("结构化结果.xls")

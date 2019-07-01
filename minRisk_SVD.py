@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 # result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
 
 codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-data =QA.QA_fetch_stock_day_adv(codes[1:80],'2017-01-05','2017-12-25').to_hfq()
+data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
 
 
 # data =QA.QA_fetch_stock_day_adv(['002415','601155','000735','300558'],'2017-01-05','2017-12-25').to_hfq()
@@ -54,7 +54,7 @@ data =QA.QA_fetch_stock_day_adv(codes[1:80],'2017-01-05','2017-12-25').to_hfq()
 
 ###################
 
-
+####demo#####
 samples = data.close.unstack()
 lost_too_much = samples.columns[samples.isnull().sum() > samples.shape[0]*0.1]
 samples.drop(lost_too_much, axis=1,inplace=True)
@@ -68,16 +68,20 @@ lgR_mat = lgR
 
 m = marchenko_pastur_optimize(lgR_mat,samples)
 m.fit()
+m.fit(only_keep_max_side=False)
 m.sigma
 m.lanbda
 m.filt_min_var_weights
 m.normal_min_var_weights
+
 m.show_marchenko_pdf_plot()
 m.show_filtered_compare_plot()
 m.show_weights_compare_plot()
 m.show_all_plot()
+####demo#####
 
 class marchenko_pastur_optimize:
+    """输入数据矩阵，返回风险最低时对应的权重"""
     def __init__(self, codes_dates_df, compare_df=None):
         if codes_dates_df.isnull().any().sum() != 0:
             raise Exception("codes_dates_df contant NaN")

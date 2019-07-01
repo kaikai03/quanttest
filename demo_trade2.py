@@ -2,19 +2,18 @@
 # Name: QSDD strategy
 
 import QUANTAXIS as QA
-import numpy as np
 import pandas as pd
-import talib
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import seaborn as sns
+
+import matplotlib.pyplot as plt
 
 # code_list = ['000001', '000002', '000004', '600000',
 #              '600536', '000936', '002023', '600332',
 #              '600398', '300498', '603609', '300673']
 code_list = QA.QA_fetch_stock_block_adv().code[0:2]
 start_date = '2017-01-01'
-end_date = '2018-01-01'
+end_date = '2017-01-31'
+
 
 '''
 QSDD 
@@ -57,6 +56,8 @@ def QSDD(dataframe, SHORT=12, LONG=26, M=9):
 
 # create account
 Account = QA.QA_Account('user_admin','user_admin_qsdd')
+
+
 Broker = QA.QA_BacktestBroker()
 
 Account.reset_assets(1000000)
@@ -73,7 +74,8 @@ ind = data.add_func(QSDD)
 # data_forbacktest=data.select_time('2018-01-01','2018-05-20')
 data_forbacktest = data
 
-def dealOrder(account, broker, order):
+
+def deal_order(account, broker, item, order):
     broker.receive_order(QA.QA_Event(order=order, market_data=item))
     trade_mes = broker.query_orders(account.account_cookie, 'filled')
     res = trade_mes.loc[order.account_cookie, order.realorder_id]
@@ -91,7 +93,7 @@ def buy_item_mount(account, broker, item, amount):
         order_model=QA.ORDER_MODEL.CLOSE,
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
-    dealOrder(account, broker, order)
+    deal_order(account, broker, item, order)
 
 
 def sell_item_mount(account, broker, item, amount):
@@ -104,19 +106,21 @@ def sell_item_mount(account, broker, item, amount):
         order_model=QA.ORDER_MODEL.MARKET,
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
-    dealOrder(account, broker, order)
+    deal_order(account, broker, item, order)
 
-for items in data_forbacktest.panel_gen:
-    for item in items.security_gen:
+
+for items22 in data_forbacktest.panel_gen:
+    for item in items22.security_gen:
         daily_ind = ind.loc[item.index]
         if daily_ind.CROSS_JC.iloc[0] > 0:
             buy_item_mount(Account, Broker, item, 1000)
         elif daily_ind.CROSS_SC.iloc[0] > 0:
-            sell_availiabel = Account.sell_available.get(item.code[0], 0)
-            if sell_availiabel > 0:
-                sell_item_mount(Account, Broker, item, sell_availiabel)
+            sell_availiable = Account.sell_available.get(item.code[0], 0)
+            if sell_availiable > 0:
+                sell_item_mount(Account, Broker, item, sell_availiable)
 
     Account.settle()
+
 
 print(Account.history)
 print(Account.history_table)
@@ -127,7 +131,8 @@ Risk = QA.QA_Risk(Account)
 print(Risk.message)
 print(Risk.assets)
 
-# Risk.assets.plot()
+fig = Risk.assets.plot()
+fig.plot()
 # Risk.benchmark_assets.plot()
 fig = Risk.plot_assets_curve()
 fig.plot()
@@ -140,8 +145,8 @@ plt.show()
 
 pr=QA.QA_Performance(Account)
 pr.pnl_fifo
-pr.plot_pnlmoney(pr.pnl_fifo)
-pr.plot_pnlratio(pr.pnl_fifo)
+pr.plot_pnlmoney()
+pr.plot_pnlratio()
 pr.message
 
 # plt.style.use('ggplot')
@@ -160,7 +165,7 @@ pr.message
 #
 # cmap = sns.cubehelix_palette(start=1, rot=3, gamma=0.8, as_cmap=True)
 # ht = sns.heatmap(Account.trade.head(55), cmap=cmap, linewidths=0.05, ax=ax)
-# # sns.heatmap(Account.trade.head(55), cmap="YlGnBu",linewidths = 0.05, ax = ax)
+# sns.heatmap(Account.trade.head(55), cmap="YlGnBu",linewidths = 0.05, ax = ax)
 # # ht.set_xticklabels(rotation=90)
 # # ht.set_yticklabels(rotation=90)
 # plt.show()
