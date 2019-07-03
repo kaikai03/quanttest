@@ -73,6 +73,14 @@ m.sigma
 m.lanbda
 m.filt_min_var_weights
 m.normal_min_var_weights
+m.filt_min_var_weights_series.sum()
+m.normal_min_var_weights_series.sum()
+
+m.filt_min_var_weights_series_norm.sum()
+m.normal_min_var_weights_series_norm.sum()
+
+
+
 
 m.show_marchenko_pdf_plot()
 m.show_filtered_compare_plot()
@@ -107,6 +115,55 @@ class marchenko_pastur_optimize:
 
         self.filt_min_var_weights = None
         self.normal_min_var_weights = None
+
+        self._filt_min_var_weights_series = None
+        self._normal_min_var_weights_series = None
+
+        self._filt_min_var_weights_series_norm = None
+        self._normal_min_var_weights_series_norm = None
+
+    @property  ##获取过滤后的权重Series的懒加载
+    def filt_min_var_weights_series(self):
+        if not isinstance(self._filt_min_var_weights_series, type(None)):
+            return self._filt_min_var_weights_series
+        else:
+            self._filt_min_var_weights_series = pd.Series(self.filt_min_var_weights, self.data.columns.values.tolist())
+            return self._filt_min_var_weights_series
+
+    @property  ##获取原始最小权重Series的懒加载
+    def normal_min_var_weights_series(self):
+        if not isinstance(self._normal_min_var_weights_series, type(None)):
+            return self._normal_min_var_weights_series
+        else:
+            self._normal_min_var_weights_series = pd.Series(self.normal_min_var_weights, self.data.columns.values.tolist())
+            return self._normal_min_var_weights_series
+
+    @property  ##获取归一化的滤后权重
+    def filt_min_var_weights_series_norm(self):
+        if not isinstance(self._filt_min_var_weights_series_norm, type(None)):
+            return self._filt_min_var_weights_series_norm
+        else:
+            weights=self.filt_min_var_weights_series.copy()
+            weights[weights<=0] = np.nan
+            weights.dropna(0, inplace= True)
+            weights=(np.exp(weights) / np.exp(weights).sum())
+            self._filt_min_var_weights_series_norm = weights
+
+            return self._filt_min_var_weights_series_norm
+
+    @property  ##获取归一化的滤前权重
+    def normal_min_var_weights_series_norm(self):
+        if not isinstance(self._normal_min_var_weights_series_norm, type(None)):
+            return self._normal_min_var_weights_series_norm
+        else:
+            weights=self.normal_min_var_weights_series.copy()
+            weights[weights<=0] = np.nan
+            weights.dropna(0, inplace= True)
+            weights=(np.exp(weights) / np.exp(weights).sum())
+            self._normal_min_var_weights_series_norm = weights
+
+            return self._normal_min_var_weights_series_norm
+
 
     # 马尔琴科分布理论上界
     def marchenko_pastur_maxmum(self, lanbda, sigma=1):
@@ -165,6 +222,7 @@ class marchenko_pastur_optimize:
         inv_dot_ones = np.dot(filt_inv_cov, ones)
         self.filt_min_var_weights = inv_dot_ones/ np.dot( inv_dot_ones , ones)
         self.fitted = True
+
 
     @property
     def normal_min_var_weights(self):
