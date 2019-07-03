@@ -109,8 +109,8 @@ def sell_item_mount(account, broker, item, amount):
     deal_order(account, broker, item, order)
 
 
-for items22 in data_forbacktest.panel_gen:
-    for item in items22.security_gen:
+for items in data_forbacktest.panel_gen:
+    for item in items.security_gen:
         daily_ind = ind.loc[item.index]
         if daily_ind.CROSS_JC.iloc[0] > 0:
             buy_item_mount(Account, Broker, item, 1000)
