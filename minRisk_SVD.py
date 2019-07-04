@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 # infos = QA.QA_fetch_stock_list_adv()
 # result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
 
-codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
+# codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
+# data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
 
 
 # data =QA.QA_fetch_stock_day_adv(['002415','601155','000735','300558'],'2017-01-05','2017-12-25').to_hfq()
@@ -55,38 +55,44 @@ data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
 ###################
 
 ####demo#####
-samples = data.close.unstack()
-lost_too_much = samples.columns[samples.isnull().sum() > samples.shape[0]*0.1]
-samples.drop(lost_too_much, axis=1,inplace=True)
-samples.dropna(0, inplace= True)
 
-lgR = np.log((data.close/data.pre_close).unstack())
-lgR.drop(lost_too_much, axis=1,inplace=True)
-lgR.dropna(0, inplace= True)
-lgR_mat = lgR
-
-
-m = marchenko_pastur_optimize(lgR_mat,samples)
-m.fit()
-m.fit(only_keep_max_side=False)
-m.sigma
-m.lanbda
-m.filt_min_var_weights
-m.normal_min_var_weights
-m.filt_min_var_weights_series.sum()
-m.normal_min_var_weights_series.sum()
-
-m.filt_min_var_weights_series_norm.sum()
-m.normal_min_var_weights_series_norm.sum()
-
-
-
-
-m.show_marchenko_pdf_plot()
-m.show_filtered_compare_plot()
-m.show_weights_compare_plot()
-m.show_all_plot()
+# lgR_mat,samples = preprocess(data)
+#
+# m = marchenko_pastur_optimize(lgR_mat,samples)
+# m.fit()
+# m.fit(only_keep_max_side=False)
+# m.sigma
+# m.lanbda
+# m.filt_min_var_weights
+# m.normal_min_var_weights
+# m.filt_min_var_weights_series.sum()
+# m.normal_min_var_weights_series.sum()
+#
+# m.filt_min_var_weights_series_norm.sum()
+# m.normal_min_var_weights_series_norm.sum()
+#
+#
+#
+#
+# m.show_marchenko_pdf_plot()
+# m.show_filtered_compare_plot()
+# m.show_weights_compare_plot()
+# m.show_all_plot()
 ####demo#####
+
+def preprocess(data):
+    compare_samples = data.close.unstack()
+    lost_too_much = compare_samples.columns[compare_samples.isnull().sum() > compare_samples.shape[0]*0.1]
+    compare_samples.drop(lost_too_much, axis=1,inplace=True)
+    compare_samples.dropna(0, inplace= True)
+
+    print("lost too must,del:{}".format(lost_too_much))
+
+    lgR = np.log((data.close/data.pre_close).unstack())
+    lgR.drop(lost_too_much, axis=1,inplace=True)
+    lgR.dropna(0, inplace= True)
+    lgR_mat = lgR
+    return lgR,compare_samples
 
 class marchenko_pastur_optimize:
     """输入数据矩阵，返回风险最低时对应的权重"""
@@ -101,7 +107,7 @@ class marchenko_pastur_optimize:
         self.origin_data_compare = compare_df
         self.sigma = 1
         self.only_keep_max_side=True
-        N,T = lgR_mat.shape
+        N,T = codes_dates_df.shape
         self.lanbda = T/N
 
         self.corMat = None
@@ -121,6 +127,7 @@ class marchenko_pastur_optimize:
 
         self._filt_min_var_weights_series_norm = None
         self._normal_min_var_weights_series_norm = None
+
 
     @property  ##获取过滤后的权重Series的懒加载
     def filt_min_var_weights_series(self):
@@ -146,7 +153,7 @@ class marchenko_pastur_optimize:
             weights=self.filt_min_var_weights_series.copy()
             weights[weights<=0] = np.nan
             weights.dropna(0, inplace= True)
-            weights=(np.exp(weights) / np.exp(weights).sum())
+            weights=weights / weights.sum()
             self._filt_min_var_weights_series_norm = weights
 
             return self._filt_min_var_weights_series_norm
@@ -159,7 +166,7 @@ class marchenko_pastur_optimize:
             weights=self.normal_min_var_weights_series.copy()
             weights[weights<=0] = np.nan
             weights.dropna(0, inplace= True)
-            weights=(np.exp(weights) / np.exp(weights).sum())
+            weights=weights / weights.sum()
             self._normal_min_var_weights_series_norm = weights
 
             return self._normal_min_var_weights_series_norm
