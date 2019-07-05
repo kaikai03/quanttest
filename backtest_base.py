@@ -17,9 +17,14 @@ def buy_item_mount(account, broker, item, amount):
         order_model=QA.ORDER_MODEL.CLOSE,
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
+    if not order:
+        return False
     deal_order(account, broker, order, item)
+    return True
 
 def buy_item_money(account, broker, item, money, price):
+    if item.close.values[0]*100*(1+account.commission_coeff) >= money:
+        return False
     order = account.send_order(
         code=item.code[0],
         time=item.date[0],
@@ -29,8 +34,10 @@ def buy_item_money(account, broker, item, money, price):
         order_model=QA.ORDER_MODEL.CLOSE,
         amount_model=QA.AMOUNT_MODEL.BY_MONEY
     )
+    if not order:
+        return False
     deal_order(account, broker, order, item)
-
+    return True
 
 def sell_item_mount(account, broker, item, amount):
     order = account.send_order(
@@ -42,4 +49,7 @@ def sell_item_mount(account, broker, item, amount):
         order_model=QA.ORDER_MODEL.MARKET,
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
+    if not order:
+        return False
     deal_order(account, broker, order, item)
+    return True

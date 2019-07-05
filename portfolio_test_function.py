@@ -43,17 +43,74 @@ def hold_test(weights, start_date, end_date, init_cash=10000000):
         cash_scale = cash_scale*0.94
 
     for item in start_item.security_gen:
-        if cash_scale[item.code[0]] < item.close.values[0]*100 :
+        if cash_scale[item.code[0]] < item.close.values[0]*100:
             continue
         print(item.code[0], round(cash_scale[item.code[0]],2),item.close.values[0])
-        trade.buy_item_money(account, broker, item, round(cash_scale[item.code[0]],2),item.close.values[0])
-        account.settle()
+        ret = trade.buy_item_money(account, broker, item, round(cash_scale[item.code[0]],2),item.close.values[0])
+        if ret:
+            account.settle()
 
     empty_assets(account, broker, start_date, end_date)
 
     return account
 
+def count_continuous(sign_Series):
+    max_continuous_positive_count=0
+    max_continuous_negative_count=0
+    continuous_tem = 0
+    for idx,item in enumerate(sign_Series):
+        if idx==0:continue
+        if item==0:continue
+        if item != sign_Series.iloc[idx-1]:
+            continuous_tem=0
+            continue
 
+        continuous_tem+=1
+        if item > 0:
+            max_continuous_positive_count = max(max_continuous_positive_count,continuous_tem)
+        else:
+            max_continuous_negative_count = max(max_continuous_negative_count,continuous_tem)
+
+    return max_continuous_positive_count,max_continuous_negative_count
+
+code = "000001"
+data = QA.QA_fetch_index_day_adv(code,'2015-01-01','2018-12-30').data
+data = QA.QA_fetch_stock_day_adv(code,'2015-01-01','2018-12-30').to_qfq().data
+
+years_list = data.date.year.value_counts()
+year = years_list.index[0]
+years_list[year]
+
+priod_data = data.select_time('2018','2019')
+priod_pct = priod_data.close_pct_change()
+priod_pct_shift = priod_pct.shift(1)
+sig = np.sign(priod_pct)
+sig.value_counts()
+compare = np.sign(priod_pct) == np.sign(priod_pct_shift)
+cross = compare.value_counts()[False]
+
+co_pos,cp_neg = count_continuous(sig)
+
+
+infos = QA.QA_fetch_stock_list_adv()
+infos.loc[code]['name']
+
+a={"code":code, "name":infos.loc[code]['name'], "year":year, "days":years_list[year],
+ "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
+ "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+
+b={"code":code, "name":infos.loc[code]['name'], "year":2018, "days":years_list[year],
+ "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
+ "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+
+c={"code":"1010101", "name":infos.loc[code]['name'], "year":year, "days":years_list[year],
+ "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
+ "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+
+df = pd.DataFrame([a,b,c])
+df.set_index(["code","year","name"], inplace=True)
+
+##########################################test###############
 init_cash = 1000000
 start_date = '2017-01-08'
 end_date = '2017-12-26'
@@ -148,3 +205,17 @@ pr.pnl_fifo
 pr.plot_pnlmoney()
 pr.plot_pnlratio()
 pr.message
+
+cs=QA.QA_fetch_stock_list_adv().code
+
+summ = 0
+for code in cs:
+
+    data =QA.QA_fetch_stock_day_adv(code,"2018-05-10","2018-06-15")
+    if data is None:continue
+    if len(data)==0:continue
+    last =  data.select_time(data.date[-1],data.date[-1])
+    summ += last.close[0]*100
+    print(code, last.close[0]*100)
+
+summ
