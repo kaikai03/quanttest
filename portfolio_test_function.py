@@ -1,5 +1,6 @@
 import QUANTAXIS as QA
 import random
+import time
 import numpy as np
 import pandas as pd
 pd.set_option('display.width', 800)
@@ -10,6 +11,14 @@ pd.set_option('display.unicode.east_asian_width', True)
 
 import backtest_base as trade
 import minRisk_SVD as SVD
+
+from multiprocessing.dummy import Pool
+
+class myError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 def empty_assets(account, broker, holded_start_date, holded_end_date):
     for code in account.sell_available.index:
@@ -75,25 +84,33 @@ def count_continuous(sign_Series):
 
     return max_continuous_positive_count,max_continuous_negative_count
 
-def cross_describe(codes, start='2015-01-01',end='2018-12-30', bench=False):
+def cross_describe(codes, start='2010-01-01',end='2018-12-30', bench=False):
     #code = "000001",start='2015-01-01',end='2018-12-30'
+    st_time = time.time()
+
+    global items
     items = []
 
-    if bench:
-        codes.insert(0,'000001')
+    def deal(code):
+        print(" process:",code)
+        stock_name = None
 
-    for idx, code in enumerate(codes):
-        print("process:",code)
-        if bench and idx == 0:
-            data = QA.QA_fetch_index_day_adv(code,start,end)
-            stock_name = 'bench'
-        else:
-            data = QA.QA_fetch_stock_day_adv(code,start,end).to_qfq()
-            stock_name = QA.QA_fetch_stock_list_adv().loc[code]['name']
+        if not str(code)[0] in ['0','6']:
+            print("jump:", code)
+            return
+
+        data = QA.QA_fetch_stock_day_adv(code,start,end)
+        if data is None or len(data)==0:
+            print("jump:", code)
+            return
+        data = data.to_qfq()
+        if code in code_in_infos:
+            stock_name = stock_infos.loc[code]['name']
 
         years_list = data.date.year.value_counts()
         # year = years_list.index[0]
 
+        tmp = []
         for year in years_list.index:
             open_days = years_list[year]
             period_data = data.select_time(str(year),str(year+1))
@@ -112,19 +129,42 @@ def cross_describe(codes, start='2015-01-01',end='2018-12-30', bench=False):
 
             # "days":open_days,  "cross":cross,
             item={"code":code, "name":stock_name, "year":year,
-             "conti_p":co_pos, "conti_n":cp_neg, "cross_r":round(cross/open_days,2),
-             "go_up":up_down_count[1],"go_dn":up_down_count[-1],
-             "max_pri":round(period_data.price.max(),2),"min_pri":round(period_data.price.min(),2)}
+             "co_p":co_pos, "co_n":cp_neg, "cros_r":round(cross/open_days,2),
+             "go_up":up_down_count.get(1,None),"go_dn":up_down_count.get(-1,None),
+             "max_pri":round(period_data.close.max(),2),"min_pri":round(period_data.close.min(),2)}
 
-            items.append(item)
+            tmp.append(item)
+        items.extend(tmp)
+
+    stock_infos = QA.QA_fetch_stock_list_adv()
+    code_in_infos = stock_infos.code
+    size = len(codes)
+
+    pool = Pool(4)
+    pool.map(deal, codes)
+    pool.close()
+    pool.join()
+    # if bench:
+    #     codes.insert(0,'000001')
+    #         if bench and idx == 0:
+    #         data = QA.QA_fetch_index_day_adv(code,start,end)
+    #         stock_name = 'bench'
+    #     else:
+
+    # for idx, code in enumerate(codes):
+
 
     df = pd.DataFrame(items)
     df.set_index(["code","name","year"], inplace=True)
+    print("used:",(time.time()-st_time))
     return df
 
-df = cross_describe(codes, bench=True)
+len(codes.code)
+df = cross_describe(codes.code, bench=True)
 df
-df.sort_index()
+df.sort_index().to_excel('./file/cross_describe.xls')
+
+
 
 
 ##########################################test###############
@@ -141,7 +181,7 @@ codes = ["002415",'000900','600352','600759','601600','600392','600523','600139'
 #QA.QA_util_get_trade_range(start_date, end_date)
 ####################
 codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-data =QA.QA_fetch_stock_day_adv(codes[1:10],start_date,end_date).to_hfq()
+data =QA.QA_fetch_stock_day_adv(codes[1:10],start_date,end_date).to_qfq()
 
 data =QA.QA_fetch_stock_day_adv(codes,start_date,end_date).to_qfq()
 lgR_mat,samples = SVD.preprocess(data)
