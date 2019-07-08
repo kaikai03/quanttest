@@ -5,6 +5,8 @@ import pandas as pd
 pd.set_option('display.width', 800)
 pd.set_option('display.max_columns', 60)
 pd.set_option('display.max_rows', 500)
+pd.set_option('display.unicode.ambiguous_as_wide', True)
+pd.set_option('display.unicode.east_asian_width', True)
 
 import backtest_base as trade
 import minRisk_SVD as SVD
@@ -73,42 +75,57 @@ def count_continuous(sign_Series):
 
     return max_continuous_positive_count,max_continuous_negative_count
 
-code = "000001"
-data = QA.QA_fetch_index_day_adv(code,'2015-01-01','2018-12-30').data
-data = QA.QA_fetch_stock_day_adv(code,'2015-01-01','2018-12-30').to_qfq().data
+def cross_describe(codes, start='2015-01-01',end='2018-12-30', bench=False):
+    #code = "000001",start='2015-01-01',end='2018-12-30'
+    items = []
 
-years_list = data.date.year.value_counts()
-year = years_list.index[0]
-years_list[year]
+    if bench:
+        codes.insert(0,'000001')
 
-priod_data = data.select_time('2018','2019')
-priod_pct = priod_data.close_pct_change()
-priod_pct_shift = priod_pct.shift(1)
-sig = np.sign(priod_pct)
-sig.value_counts()
-compare = np.sign(priod_pct) == np.sign(priod_pct_shift)
-cross = compare.value_counts()[False]
+    for idx, code in enumerate(codes):
+        print("process:",code)
+        if bench and idx == 0:
+            data = QA.QA_fetch_index_day_adv(code,start,end)
+            stock_name = 'bench'
+        else:
+            data = QA.QA_fetch_stock_day_adv(code,start,end).to_qfq()
+            stock_name = QA.QA_fetch_stock_list_adv().loc[code]['name']
 
-co_pos,cp_neg = count_continuous(sig)
+        years_list = data.date.year.value_counts()
+        # year = years_list.index[0]
 
+        for year in years_list.index:
+            open_days = years_list[year]
+            period_data = data.select_time(str(year),str(year+1))
+            if len(period_data) == 0:
+                continue
 
-infos = QA.QA_fetch_stock_list_adv()
-infos.loc[code]['name']
+            priod_pct = period_data.close_pct_change()
+            priod_pct_shift = priod_pct.shift(1)
+            sig = np.sign(priod_pct)
+            up_down_count = sig.value_counts()
 
-a={"code":code, "name":infos.loc[code]['name'], "year":year, "days":years_list[year],
- "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
- "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+            compare = np.sign(priod_pct) == np.sign(priod_pct_shift)
+            cross = compare.value_counts()[False]
 
-b={"code":code, "name":infos.loc[code]['name'], "year":2018, "days":years_list[year],
- "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
- "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+            co_pos,cp_neg = count_continuous(sig)
 
-c={"code":"1010101", "name":infos.loc[code]['name'], "year":year, "days":years_list[year],
- "conti_p":co_pos, "conti_n":cp_neg, "cross":cross,
- "max_pri":priod_data.price.max(),"min_pri":priod_data.price.min()}
+            # "days":open_days,  "cross":cross,
+            item={"code":code, "name":stock_name, "year":year,
+             "conti_p":co_pos, "conti_n":cp_neg, "cross_r":round(cross/open_days,2),
+             "go_up":up_down_count[1],"go_dn":up_down_count[-1],
+             "max_pri":round(period_data.price.max(),2),"min_pri":round(period_data.price.min(),2)}
 
-df = pd.DataFrame([a,b,c])
-df.set_index(["code","year","name"], inplace=True)
+            items.append(item)
+
+    df = pd.DataFrame(items)
+    df.set_index(["code","name","year"], inplace=True)
+    return df
+
+df = cross_describe(codes, bench=True)
+df
+df.sort_index()
+
 
 ##########################################test###############
 init_cash = 1000000
@@ -119,7 +136,7 @@ codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药'])
 codes[1:10]
 codes = ["002415",'000900','600352','600759','601600','600392','600523','600139','600885','600575','600975',
          '600586','601118','600738','603648','600426','600217','600483','601669','603008','600371','600965',
-         '600377','601988','601009','600639','600145','603799','600681','600598','603690','600535','600030',
+         '600377','601988','601009','600639','600145','600681','600598','603690','600535','600030',
          '600257','601607','600926','603799','600084','600763','603978']
 #QA.QA_util_get_trade_range(start_date, end_date)
 ####################
