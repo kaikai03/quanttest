@@ -3,22 +3,12 @@ import random
 import time
 import numpy as np
 import pandas as pd
-pd.set_option('display.width', 800)
-pd.set_option('display.max_columns', 60)
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.unicode.ambiguous_as_wide', True)
-pd.set_option('display.unicode.east_asian_width', True)
+
 
 import backtest_base as trade
 import minRisk_SVD as SVD
 
-from multiprocessing.dummy import Pool
 
-class myError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
 
 def empty_assets(account, broker, holded_start_date, holded_end_date):
     for code in account.sell_available.index:
@@ -65,104 +55,7 @@ def hold_test(weights, start_date, end_date, init_cash=10000000):
 
     return account
 
-def count_continuous(sign_Series):
-    max_continuous_positive_count=0
-    max_continuous_negative_count=0
-    continuous_tem = 0
-    for idx,item in enumerate(sign_Series):
-        if idx==0:continue
-        if item==0:continue
-        if item != sign_Series.iloc[idx-1]:
-            continuous_tem=0
-            continue
 
-        continuous_tem+=1
-        if item > 0:
-            max_continuous_positive_count = max(max_continuous_positive_count,continuous_tem)
-        else:
-            max_continuous_negative_count = max(max_continuous_negative_count,continuous_tem)
-
-    return max_continuous_positive_count,max_continuous_negative_count
-
-def cross_describe(codes, start='2010-01-01',end='2018-12-30', bench=False):
-    #code = "000001",start='2015-01-01',end='2018-12-30'
-    st_time = time.time()
-
-    global items
-    items = []
-
-    def deal(code):
-        print(" process:",code)
-        stock_name = None
-
-        if not str(code)[0] in ['0','6']:
-            print("jump:", code)
-            return
-
-        data = QA.QA_fetch_stock_day_adv(code,start,end)
-        if data is None or len(data)==0:
-            print("jump:", code)
-            return
-        data = data.to_qfq()
-        if code in code_in_infos:
-            stock_name = stock_infos.loc[code]['name']
-
-        years_list = data.date.year.value_counts()
-        # year = years_list.index[0]
-
-        tmp = []
-        for year in years_list.index:
-            open_days = years_list[year]
-            period_data = data.select_time(str(year),str(year+1))
-            if len(period_data) == 0:
-                continue
-
-            priod_pct = period_data.close_pct_change()
-            priod_pct_shift = priod_pct.shift(1)
-            sig = np.sign(priod_pct)
-            up_down_count = sig.value_counts()
-
-            compare = np.sign(priod_pct) == np.sign(priod_pct_shift)
-            cross = compare.value_counts()[False]
-
-            co_pos,cp_neg = count_continuous(sig)
-
-            # "days":open_days,  "cross":cross,
-            item={"code":code, "name":stock_name, "year":year,
-             "co_p":co_pos, "co_n":cp_neg, "cros_r":round(cross/open_days,2),
-             "go_up":up_down_count.get(1,None),"go_dn":up_down_count.get(-1,None),
-             "max_pri":round(period_data.close.max(),2),"min_pri":round(period_data.close.min(),2)}
-
-            tmp.append(item)
-        items.extend(tmp)
-
-    stock_infos = QA.QA_fetch_stock_list_adv()
-    code_in_infos = stock_infos.code
-    size = len(codes)
-
-    pool = Pool(4)
-    pool.map(deal, codes)
-    pool.close()
-    pool.join()
-    # if bench:
-    #     codes.insert(0,'000001')
-    #         if bench and idx == 0:
-    #         data = QA.QA_fetch_index_day_adv(code,start,end)
-    #         stock_name = 'bench'
-    #     else:
-
-    # for idx, code in enumerate(codes):
-
-
-    df = pd.DataFrame(items)
-    df.set_index(["code","name","year"], inplace=True)
-    print("used:",(time.time()-st_time))
-    return df
-
-len(codes.code)
-df = cross_describe(codes.code, bench=True)
-df
-df.sort_index().to_excel('./file/cross_describe.xls')
 
 
 
