@@ -36,7 +36,7 @@ def count_continuous(sign_Series):
 
     return max_continuous_positive_count,max_continuous_negative_count
 
-def cross_describe(codes, start='2010-01-01',end='2019-06-30', bench=False):
+def cross_describe(codes, start='2010-01-01',end='2019-06-30', bench=False, MA=0):
     #code = "000001",start='2015-01-01',end='2018-12-30'
     st_time = time.time()
 
@@ -79,8 +79,9 @@ def cross_describe(codes, start='2010-01-01',end='2019-06-30', bench=False):
             if len(period_data) == 0:
                 continue
 
-            period_data = period_data.add_func(QA.MA,5)
-            period_data.dropna(inplace=True)
+            if MA > 0:
+                period_data = period_data.add_func(QA.MA, MA)
+                period_data.dropna(inplace=True)
 
             priod_pct = period_data.close/period_data.close.shift(1) - 1
             priod_pct_shift = priod_pct.shift(1)
@@ -128,7 +129,7 @@ def cross_describe(codes, start='2010-01-01',end='2019-06-30', bench=False):
 codes = QA.QA_fetch_stock_block_adv()
 
 len(codes.code)
-df = cross_describe(codes.code[10:12], bench=True)
+df = cross_describe(codes.code, bench=True, MA=5)
 df
 df.sort_index().to_excel('./file/cross_describe_ma5.xls')
 #######################test
