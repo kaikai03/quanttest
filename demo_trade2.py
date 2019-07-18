@@ -15,14 +15,6 @@ start_date = '2017-01-01'
 end_date = '2017-01-31'
 
 
-'''
-QSDD 
-趋势顶底（QSDD）指标介绍
-
-'''
-
-# define the QSDD strategy
-
 
 def QSDD(dataframe, SHORT=12, LONG=26, M=9):
     """
