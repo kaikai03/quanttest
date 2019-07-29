@@ -129,7 +129,7 @@ def cross_describe(codes, start='2010-01-01',end='2019-06-30', bench=False, MA=0
 codes = QA.QA_fetch_stock_block_adv()
 
 len(codes.code)
-df = cross_describe(codes.code, bench=True, MA=5)
+df = cross_describe(['600419'], bench=True, MA=5)
 df
 df.sort_index().to_excel('./file/cross_describe_ma5.xls')
 #######################test

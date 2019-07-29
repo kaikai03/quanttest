@@ -32,7 +32,7 @@ def hold_test(weights, start_date, end_date, init_cash=10000000):
     broker = QA.QA_BacktestBroker()
     account.reset_assets(init_cash)
 
-    data = QA.QA_fetch_stock_day_adv(weights.index.to_list(), start_date, end_date)
+    data = QA.QA_fetch_stock_day_adv(list(weights.index), start_date, end_date)
     data = data.to_qfq()
     if data is None:return None
     if len(data) == 0:return None
@@ -82,7 +82,7 @@ m = SVD.marchenko_pastur_optimize(lgR_mat,samples)
 m.fit()
 
 weights__ = pd.Series([0.5,0.3,0.2], ["000001","000002","000004"])
-
+list(weights__.index)
 start_date = '2018-01-08'
 end_date = '2018-12-26'
 weights__ = m.filt_min_var_weights_series_norm

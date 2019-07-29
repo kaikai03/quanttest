@@ -8,13 +8,14 @@ def deal_order(account, broker, order,item):
                 res.trade_amount, res.trade_time)
 
 
-def buy_item_mount(account, broker, item, amount):
+def buy_item_mount(account, broker, item, amount, price):
     order = account.send_order(
         code=item.code[0],
         time=item.date[0],
+        price=price,
         amount=amount,
         towards=QA.ORDER_DIRECTION.BUY,
-        order_model=QA.ORDER_MODEL.CLOSE,
+        order_model=QA.ORDER_MODEL.LIMIT,
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
     if not order:
@@ -23,15 +24,15 @@ def buy_item_mount(account, broker, item, amount):
     return True
 
 def buy_item_money(account, broker, item, money, price):
-    if item.close.values[0]*100*(1+account.commission_coeff) >= money:
-        return False
+    # if item.close.values[0]*100*(1+account.commission_coeff) >= money:
+    #     return False
     order = account.send_order(
         code=item.code[0],
         time=item.date[0],
         money=money,
         price=price,
         towards=QA.ORDER_DIRECTION.BUY,
-        order_model=QA.ORDER_MODEL.CLOSE,
+        order_model=QA.ORDER_MODEL.LIMIT,
         amount_model=QA.AMOUNT_MODEL.BY_MONEY
     )
     if not order:
