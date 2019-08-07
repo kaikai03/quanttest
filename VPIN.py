@@ -14,20 +14,8 @@ import scipy.stats as ss
 import scipy.special as sp
 import matplotlib.pyplot as plt
 
-data = QA.QA_fetch_stock_min_adv("601155", '2017-1-27 9:00:00', '2017-2-07 15:00:00',frequence='5min').to_qfq().reset_index()
-
-data.close.plot()
-data
-
-# file_location="c:/Users/Terry/Documents/Data/comex.GC_141006_151006(1min).csv"
-# test=pd.read_csv(file_location)
-
-# select data for a certain period and clean out unwanted data
-# date=df.loc[:'datetime',]
-# df=test[date[date==20150701].index[0]:date[date==20150731].index[-1]+1]
-# df=df.loc[:,('<DATE>','<TIME>','<CLOSE>','<VOL>')]
-# df.columns=["date","time","price","volume"]
-# df.volume=df.volume.fillna(0)
+data = QA.QA_fetch_stock_min_adv("601155", '2019-8-06 9:00:00', '2019-8-06 15:00:00',frequence='5min').to_qfq().reset_index()
+# data.close.plot()
 
 
 df=pd.DataFrame(np.array([data.datetime,data.close,data.volume]).T,columns=['date','price','volume'])
@@ -51,7 +39,10 @@ def volume(co,size):
 # use the function to obtain last price and volume size of each volume bar
 counter=0
 count=0
-size=len(df.volume)  # volume size
+rolling_wondow = 2
+N=50
+# size=len(df.volume)  # volume size
+size=np.sum(df.volume)/N  # volume size
 last_index=[]
 volume_bar_size=[]
 try:
@@ -97,11 +88,13 @@ buy_sell=pd.DataFrame(buy_sell,columns=['buy','sell','total','label'])
 
 # Applying BVC algorithm
 for i in range(0,len(d_price_diff)):
-    if d_price_diff[i] is np.nan:
+    if d_price_diff[last_index[i]] is np.nan:
         continue
-    buy_sell.loc[i,'buy']=price_volumebar.bar_size[i-1]*ss.t.cdf(d_price_diff[i]/stDev,0.25)
-    buy_sell.loc[i,'sell']=price_volumebar.bar_size[i-1]-buy_sell.buy[i]
-    buy_sell.loc[i,'total']=price_volumebar.bar_size[i-1]
+    buy_sell.loc[i,'buy']=price_volumebar.bar_size[last_index[i]]*ss.t.cdf(d_price_diff[last_index[i]]/stDev,0.25)
+    buy_sell.loc[i,'sell']=price_volumebar.bar_size[last_index[i]]-buy_sell.buy[i]
+    buy_sell.loc[i,'total']=price_volumebar.bar_size[last_index[i]]
+
+
 
 # If more buys, then label the var as 'buy'
 for j in range(0,len(d_price_diff)):
@@ -110,30 +103,26 @@ for j in range(0,len(d_price_diff)):
     else:
         buy_sell.loc[j,'label']='sell'
 
+buy_sell.index=last_index
 
 # caculate VPIN
 #buy_sell_vspread=buy_sell.sell-buy_sell.buy
 buy_sell_vspread=abs(buy_sell.sell-buy_sell.buy)
-#vpin=np.nansum(abs(buy_sell.buy-buy_sell.sell))/np.nansum(buy_sell.total)
-rolling_size=2 # rolling wondow size in terms of how many volume bars
-# vpin=list(pd.rolling_sum((buy_sell_vspread),rolling_size)/pd.rolling_sum(buy_sell.total,rolling_size))
-# rstd=pd.rolling_std(last_price,rolling_size)
+rolling_size=rolling_wondow # rolling wondow size in terms of how many volume bars
 
 vpin=buy_sell_vspread.rolling(rolling_size).sum()/ buy_sell.total.rolling(rolling_size).sum()
-vpin_list = list(vpin)
-rstd=last_price.rolling(rolling_size).std()
+# rstd=last_price.rolling(rolling_size).std()
 
 
 ## calculate the cdf vpin
-# vpin_selected=vpin_list[0:vpin_list.index(np.nanmax(vpin_list))+1]
-vpin_selected=vpin_list
 def cdf(x):
-    miu=np.nanmean(vpin_selected)
-    sigma=np.nanstd(vpin_selected)
+    miu=np.nanmean(vpin)
+    sigma=np.nanstd(vpin)
     cdf=0.5*(1+sp.erf((x-miu)/(2**0.5)/sigma))
     return (cdf)
 
-cdf_vpin=[cdf(i) for i in vpin_selected]
+# cdf_vpin=[cdf(i) for i in vpin_selected]
+cdf_vpin = cdf(vpin)
 
 #sorted_vpin=np.sort(vpin_selected)
 #yvals=1.*np.arange(len(sorted_vpin))/(len(sorted_vpin)-1)
@@ -148,21 +137,13 @@ import matplotlib.pyplot as plt
 
 # corresponded time index
 time_bar_date=df.date[last_index]
-b1=[str(i) for i in time_bar_date]
+b=[str(i) for i in time_bar_date]
 
-b=b1
+# a=range(len(vpin))
+a=[float(i) for i in last_index]
 
-# time_bar_time=df.time[last_index]
-# b2=[str(i) for i in time_bar_time]
-#
-# b=['' for x in range(len(b1))]
-# for i in range(0,len(b1)):
-#      b[i]=''.join([b1[i],'-',b2[i]])
 
-a=range(len(vpin))
-a=[float(i) for i in a]
-
-fig,ax1=plt.subplots()
+fig,ax1=plt.subplots(figsize=(13, 5))
 ax1.plot(vpin,color='red',label='VPIN')
 ax1.plot(cdf_vpin,'*-',color='brown')
 ax1.set_ylabel('VPIN',color='red',fontsize=18)
@@ -173,7 +154,10 @@ ax1.xaxis.grid()
 ax2=ax1.twinx()
 ax2.plot(last_price[1:],color='blue',label='sell volume')
 ax2.set_ylabel('Price',color='blue',fontsize=18)
+ax2.plot(df.price,color='gray')
 
+
+####################################################################
 
 fig,ax1=plt.subplots()
 ax1.plot(d_price_diff_percentage,color='red',label='VPIN')
