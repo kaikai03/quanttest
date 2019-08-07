@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import QUANTAXIS as QA
+from QUANTAXIS.QAUtil.QAParameter import MARKET_TYPE
 import pandas as pd
 
 import matplotlib.pyplot as plt
@@ -18,16 +19,16 @@ code_list = ['000001', '000002', '000004', '600000',
              '600398', '300498', '603609', '300673']
 code_list = QA.QA_fetch_stock_block_adv().code[0:2]
 
-code = '002511'
-start_date = '2017-01-01'
-end_date = '2017-12-31'
+code = '600419'
+start_date = '2018-01-03'
+end_date = '2018-12-30'
 init_cash = 100000
 
 ################strategy
 def ATR_strategy(data, duration=20):
     tr = QA.MAX(QA.MAX(data.high - data.low, data.high - data.preclose),data.preclose - data.low)
     atr = QA.MA(tr, duration)
-    return pd.DataFrame({'TR': tr, 'ATR': atr})
+    return pd.DataFrame({'TR': tr.shift(1), 'ATR': atr.shift(1)})
 
 ################### base deal
 resualts = []
@@ -37,7 +38,7 @@ def multi_test(codes, date_ranges):
             resualt = tortiose_one(code, date_range)
             resualts.append((code,date_range,resualt['a_r'],resualt['bm_ar'],resualt['alpha']))
 
-multi_test(code_list, [('2019-01-01','2019-12-31'),('2018-01-01','2018-12-31'),
+multi_test([code], [('2019-01-01','2019-12-31'),('2018-01-01','2018-12-31'),
                        ('2017-01-01','2017-12-31'),('2016-01-01','2016-12-31')])
 
 
@@ -52,7 +53,6 @@ def tortiose_one(code,date_range,init_cash=100000):
     end_date = date_range[1]
 
     data = QA.QA_fetch_stock_day_adv(code, start_date, end_date)
-    print(data)
     if data == None:
         return {"bm_ar":None,"alpha":None,'dropback':None,'beta':None,'sharpe':None, 'a_r':None,
             'risk':None, "account":None}
@@ -76,13 +76,13 @@ def tortiose_one(code,date_range,init_cash=100000):
     for items in backtest_data.panel_gen:
         for item in items.security_gen:
             up = up_line.loc[item.date[0],item.code[0]]
-            atr = inc.get_indicator(item.date[0],code,'ATR')
+            atr = inc.get_indicator(item.date[0],item.code[0],'ATR')
             if pd.isna(atr):
                 continue
 
             cur = item.price[0]
             need_buy = False
-            if item.price[0] > up:
+            if cur > up:
                 if len(account.history_table)>0:
                     if account.history_table.iloc[-1].amount<=0:
                         need_buy = True
@@ -90,7 +90,7 @@ def tortiose_one(code,date_range,init_cash=100000):
                     need_buy = True
 
             if len(account.history_table) > 0:
-                if item.price[0] > account.history_table.iloc[-1].price + 0.5 * lastATR and account.history_table.iloc[
+                if cur > account.history_table.iloc[-1].price + 0.5 * lastATR and account.history_table.iloc[
                     -1].amount > 0 :
                     need_buy = True
 
@@ -102,7 +102,7 @@ def tortiose_one(code,date_range,init_cash=100000):
 
                 if buy_unit * cur > account.cash_available:
                     buy_unit = int(account.cash_available * 0.1 / cur)
-
+                #### 注意，当前为限价模式，价格来源于日均值，意味着包含未来值
                 ret = trade.buy_item_mount(account, broker, item, buy_unit, cur)
                 if ret:
                     account.settle()
@@ -110,7 +110,7 @@ def tortiose_one(code,date_range,init_cash=100000):
                 continue
 
 
-            if item.price[0] < down_line.loc[item.date[0],item.code[0]]:
+            if cur < down_line.loc[item.date[0],item.code[0]]:
                 sell_unit = account.sell_available.get(code,0)
                 if sell_unit <= 0:
                     continue
@@ -120,7 +120,7 @@ def tortiose_one(code,date_range,init_cash=100000):
                     lastATR = 0
 
             if len(account.history_table) > 0:
-                if item.price[0] < account.history_table.iloc[-1].price - 0.2 * lastATR and account.history_table.iloc[
+                if cur < account.history_table.iloc[-1].price - 0.2 * lastATR and account.history_table.iloc[
                     -1].amount > 0 :
                     sell_unit = account.sell_available.get(code, 0)
                     if sell_unit <= 0:
@@ -148,13 +148,19 @@ def tortiose_one(code,date_range,init_cash=100000):
     return {"bm_ar":bm_ar,"alpha":alpha,'dropback':dropback,'beta':beta,'sharpe':sharpe, 'a_r':a_r,
             'risk':risk, "account":account}
 
+resualt = tortiose_one(code,(start_date,end_date))
+
+account = resualt['account']
+Risk = resualt['risk']
+
+resualt['risk'].plot_assets_curve()
 
 print(account.history)
 print(account.history_table)
 print(account.daily_hold)
 
 # create Risk analysis
-Risk = QA.QA_Risk(account)
+Risk = QA.QA_Risk(account,benchmark_code=code,benchmark_type=MARKET_TYPE.STOCK_CN)
 print(Risk.message)
 print(Risk.assets)
 Risk.market_data.data

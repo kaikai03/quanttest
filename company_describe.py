@@ -15,11 +15,12 @@ def show_value_tip(plot, series):
 def get_Q4_list(start, end):
     return [str(y)+'-12-31' for y in range(int(start), int(end)+1)]
 
-codes = QA.QA_fetch_stock_block_adv().get_block('人工智能').code
+codes = QA.QA_fetch_stock_block_adv().get_block(['婴童概念','乳业']).code
 for i in QA.QA_fetch_stock_block_adv().block_name:print(i)
 
+QA.QA_fetch_stock_block_adv().get_code('600419').data
 
-codes = ['300558','000001']
+codes = ['600419','603238','603398','600887','600597']
 start_year = '2010'
 end_year = '2019'
 
@@ -79,7 +80,7 @@ def show_ROE(codes, start_year, end_year):
         ax3.legend(loc=0)
         ax4.legend(loc=0)
 
-show_ROE(codes[60:70], start_year, end_year)
+show_ROE(codes, start_year, end_year)
 
 def show_item_compare(codes, start_year, end_year, item="ROE"):
     assert type(codes) == list
@@ -107,7 +108,7 @@ def get_descript(codes, start_year, end_year, Q4=False):
     else:
         return res_adv.data.stack()
 
-get_descript(['000001'],'2017','2019')
+get_descript(['600419'],'2010','2019')
 
 def get_company_name(codes):
     infos = QA.QA_fetch_stock_list_adv()
