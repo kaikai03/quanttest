@@ -14,7 +14,10 @@ import scipy.stats as ss
 import scipy.special as sp
 import matplotlib.pyplot as plt
 
-data = QA.QA_fetch_stock_min_adv("601155", '2019-8-06 9:00:00', '2019-8-06 15:00:00',frequence='5min').to_qfq().reset_index()
+pd.set_option('display.float_format', lambda x: '%.3f' % x)
+
+
+data = QA.QA_fetch_stock_min_adv("601155", '2018-6-01 9:00:00', '2018-6-30 15:00:00',frequence='5min').to_qfq().reset_index()
 # data.close.plot()
 
 
@@ -80,7 +83,7 @@ def weighted_std(values, weights):
 
 d_price_diff=price_volumebar.price.diff()
 d_price_diff_percentage=d_price_diff/price_volumebar.price.shift(1)
-# d_price_diff_percentage.index=range(0,len(d_price_diff_percentage))
+d_price_diff_percentage.index=range(0,len(d_price_diff_percentage))
 stDev=weighted_std(d_price_diff,price_volumebar.bar_size[1:])
 
 buy_sell=np.zeros((len(d_price_diff),4))
@@ -124,6 +127,19 @@ def cdf(x):
 # cdf_vpin=[cdf(i) for i in vpin_selected]
 cdf_vpin = cdf(vpin)
 
+offset = 12*4
+for idx in cdf_vpin[cdf_vpin>0.8].index.values:
+    size = len(df.price)
+    if idx+offset > size-1:
+        dif = df.price[idx:size-1] - df.price[idx]
+    else:
+        dif = df.price[idx:idx+offset] - df.price[idx]
+    print(idx,
+          round(dif.max(),4),round(dif.min(),4),
+          round(abs(dif.max()/df.price[idx]),4),
+          round(abs(dif.min()/df.price[idx]),4))
+
+
 #sorted_vpin=np.sort(vpin_selected)
 #yvals=1.*np.arange(len(sorted_vpin))/(len(sorted_vpin)-1)
 #index=sorted(range(len(vpin_selected)),key=lambda x:vpin_selected[x])
@@ -144,14 +160,19 @@ a=[float(i) for i in last_index]
 
 
 fig,ax1=plt.subplots(figsize=(13, 5))
-ax1.plot(vpin,color='red',label='VPIN')
+# ax1.plot(vpin,color='red',label='VPIN')
+ax1.plot(d_price_diff,color='red',label='RT')
+
+
+
 ax1.plot(cdf_vpin,'*-',color='brown')
-ax1.set_ylabel('VPIN',color='red',fontsize=18)
+ax1.set_ylabel('RT',color='red',fontsize=18)
 ax1.set_xticks(a,minor=False)
-ax1.set_xticklabels(b, rotation=60)
+# ax1.set_xticklabels(b, rotation=60)
 ax1.yaxis.grid()
 ax1.xaxis.grid()
 ax2=ax1.twinx()
+# ax2.plot(last_price[1:],color='blue',label='sell volume')
 ax2.plot(last_price[1:],color='blue',label='sell volume')
 ax2.set_ylabel('Price',color='blue',fontsize=18)
 ax2.plot(df.price,color='gray')
