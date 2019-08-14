@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
 
-data = QA.QA_fetch_stock_min_adv("601155", '2018-6-01 9:00:00', '2018-6-30 15:00:00',frequence='5min').to_qfq().reset_index()
+data = QA.QA_fetch_stock_min_adv("601155", '2016-9-01 9:00:00', '2016-9-30 15:00:00',frequence='5min').to_qfq().reset_index()
 # data.close.plot()
 
 
@@ -27,8 +27,6 @@ df=pd.DataFrame(np.array([data.datetime,data.close,data.volume]).T,columns=['dat
 # rearrange index
 df.index=range(len(df.volume))
 
-# check the total volume
-print(np.sum(df.volume))
 
 # define function to group data accroding to volume size
 def volume(co,size):
@@ -45,7 +43,7 @@ count=0
 rolling_wondow = 2
 N=50
 # size=len(df.volume)  # volume size
-size=np.sum(df.volume)/N  # volume size
+size=np.nansum(df.volume)/N  # volume size
 last_index=[]
 volume_bar_size=[]
 try:
@@ -127,30 +125,39 @@ def cdf(x):
 # cdf_vpin=[cdf(i) for i in vpin_selected]
 cdf_vpin = cdf(vpin)
 
-offset = 12*4
+offset = 12*2
+checks = []
 for idx in cdf_vpin[cdf_vpin>0.8].index.values:
     size = len(df.price)
+    if idx < size*0.05:continue
+
     if idx+offset > size-1:
         dif = df.price[idx:size-1] - df.price[idx]
     else:
         dif = df.price[idx:idx+offset] - df.price[idx]
-    print(idx,
-          round(dif.max(),4),round(dif.min(),4),
-          round(abs(dif.max()/df.price[idx]),4),
-          round(abs(dif.min()/df.price[idx]),4))
+    checks.append([idx, round(dif.max(), 4), round(dif.min(), 4), round(dif[-1:].values[0], 4),
+                   round(abs(dif[-1:].values[0] / df.price[idx]), 4),
+                   round(abs(dif.max() / df.price[idx]), 4),
+                   round(abs(dif.min() / df.price[idx]), 4)
+                   ])
+checks_df = pd.DataFrame(checks, columns=['idx', 'max', 'min','last','lar', 'mar', 'mir'])
+checks_df = checks_df.set_index('idx')
 
+count_mar = checks_df[checks_df['mar']>0.02].shape[0]/checks_df.shape[0]
+count_mir = checks_df[checks_df['mir']>0.02].shape[0]/checks_df.shape[0]
+count_total = count_mar+count_mir
 
-#sorted_vpin=np.sort(vpin_selected)
-#yvals=1.*np.arange(len(sorted_vpin))/(len(sorted_vpin)-1)
-#index=sorted(range(len(vpin_selected)),key=lambda x:vpin_selected[x])
-#cdf_vpin=vpin_selected
-#for i in range (0,len(vpin_selected)):
-#    cdf_vpin[index[i-1]]=yvals[i-1]
+count_mar,count_mir,count_total
+
+count_mar = checks_df[checks_df['mar']>0.01].shape[0]/checks_df.shape[0]
+count_mir = checks_df[checks_df['mir']>0.01].shape[0]/checks_df.shape[0]
+count_total = count_mar+count_mir
+
+count_mar,count_mir,count_total
+
 
 
 # plot of VPIN vs Price
-import matplotlib.pyplot as plt
-
 # corresponded time index
 time_bar_date=df.date[last_index]
 b=[str(i) for i in time_bar_date]
@@ -178,40 +185,4 @@ ax2.set_ylabel('Price',color='blue',fontsize=18)
 ax2.plot(df.price,color='gray')
 
 
-####################################################################
-
-fig,ax1=plt.subplots()
-ax1.plot(d_price_diff_percentage,color='red',label='VPIN')
-ax1.set_ylabel('Price difference',color='red',fontsize=18)
-ax1.set_xticks(a,minor=False)
-ax1.set_xticklabels(b, rotation=60)
-ax2=ax1.twinx()
-ax2.plot(last_price,color='blue',label='sell volume')
-ax2.set_ylabel('Price',color='blue',fontsize=18)
-
-# find vpin of 5% worst price change bars
-price_change=abs(d_price_diff_percentage)
-import heapq as h
-largest_deviation=h.nlargest(int(round(len(price_change)*0.05)),enumerate(price_change),key=lambda x:x[1])
-largest_index,value=zip(*largest_deviation)
-largest_vpin=[vpin[i] for i in largest_index]
-
-pchange_vpin=np.zeros((len(largest_vpin),2))
-pchange_vpin=pd.DataFrame(pchange_vpin,index=largest_index,columns=['price_deviation','vpin'])
-pchange_vpin.price_deviation=value
-pchange_vpin.vpin=largest_vpin
-
-
-num=np.sum(vpin>min(largest_vpin))
-den=len(vpin)
-print (num/(den*1.0))
-
-plt.figure()
-plt.hist(vpin.dropna(),50)
-aa=min(largest_vpin)
-plt.plot((aa,aa),(0,10),lw=2)
-plt.text(0.31,10,'Worst five percent price change')
-
-print ("%.4f" % np.percentile(vpin,99))
-print ("%.4f" % min(largest_vpin), "%.4f" % max(largest_vpin))
 
