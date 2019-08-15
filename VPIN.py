@@ -13,13 +13,18 @@ import math
 import scipy.stats as ss
 import scipy.special as sp
 import matplotlib.pyplot as plt
+import datetime
 
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
-"601155",'2016-9-01 9:00:00', '2016-9-30 15:00:00'
 
 
 def vpin_test(code, start, end, plot=False, frequence='5min',volumn_split=50,check_offset=12*2,rolling=2,cdf_vpin_threshold=0.8):
-    data = QA.QA_fetch_stock_min_adv(code, start, end,frequence=frequence).to_qfq().reset_index()
+    print("start",code,start,end)
+    try:
+        data = QA.QA_fetch_stock_min_adv(code, start, end,frequence=frequence).to_qfq().reset_index()
+    except:
+        print("ERRORRRRR QA_fetch_stock_min_adv ERRORRRRR")
+        return None
     # data.close.plot()
 
 
@@ -61,8 +66,8 @@ def vpin_test(code, start, end, plot=False, frequence='5min',volumn_split=50,che
     last_price=df.price[last_index]
 
     # test if volume bar is correct
-    print (np.sum(df.volume))
-    print (np.sum(volume_bar_size))
+    # print (np.sum(df.volume))
+    # print (np.sum(volume_bar_size))
 
     price_volumebar=np.zeros((len(last_index),2))
     price_volumebar=pd.DataFrame(price_volumebar,index=last_index,columns=['price','bar_size'])
@@ -128,39 +133,52 @@ def vpin_test(code, start, end, plot=False, frequence='5min',volumn_split=50,che
     ###################################check#####################
     offset = check_offset
     checks = []
+    checks_result = []
+
     for idx in cdf_vpin[cdf_vpin>cdf_vpin_threshold].index.values:
         size = len(df.price)
         if idx < size*0.05:continue
 
         if idx+offset > size-1:
-            dif = df.price[idx:size-1] - df.price[idx]
+            # dif = df.price[idx:size-1] - df.price[idx]
+            dif = None
         else:
             dif = df.price[idx:idx+offset] - df.price[idx]
-        checks.append([idx, round(dif.max(), 4), round(dif.min(), 4), round(dif[-1:].values[0], 4),
-                       round(abs(dif[-1:].values[0] / df.price[idx]), 4),
-                       round(abs(dif.max() / df.price[idx]), 4),
-                       round(abs(dif.min() / df.price[idx]), 4)
-                       ])
-    checks_df = pd.DataFrame(checks, columns=['idx', 'max', 'min','last','lar', 'mar', 'mir'])
-    checks_df = checks_df.set_index('idx')
 
-    count_mar = checks_df[checks_df['mar']>0.02].shape[0]/checks_df.shape[0]
-    count_mir = checks_df[checks_df['mir']>0.02].shape[0]/checks_df.shape[0]
-    count_total = count_mar+count_mir
+        if not dif is None:
+            checks.append([idx, round(dif.max(), 4), round(dif.min(), 4), round(dif[-1:].values[0], 4),
+                           round(abs(dif[-1:].values[0] / df.price[idx]), 4),
+                           round(abs(dif.max() / df.price[idx]), 4),
+                           round(abs(dif.min() / df.price[idx]), 4)
+                           ])
 
-    print("2.0",count_mar,count_mir,count_total)
+    if len(checks)>0:
+        checks_df = pd.DataFrame(checks, columns=['idx', 'max', 'min','last','lar', 'mar', 'mir'])
+        checks_df = checks_df.set_index('idx')
 
-    count_mar = checks_df[checks_df['mar']>0.015].shape[0]/checks_df.shape[0]
-    count_mir = checks_df[checks_df['mir']>0.015].shape[0]/checks_df.shape[0]
-    count_total = count_mar+count_mir
+        count_mar = round(checks_df[checks_df['mar']>0.02].shape[0]/checks_df.shape[0], 3)
+        count_mir = round(checks_df[checks_df['mir']>0.02].shape[0]/checks_df.shape[0], 3)
+        count_total = count_mar+count_mir
 
-    print("1.5",count_mar,count_mir,count_total)
+        print("total",checks_df.shape[0])
+        print("2.0",count_mar,count_mir,count_total)
+        checks_result.append([start, "2.0", checks_df.shape[0], count_mar,count_mir,count_total])
 
-    count_mar = checks_df[checks_df['mar']>0.01].shape[0]/checks_df.shape[0]
-    count_mir = checks_df[checks_df['mir']>0.01].shape[0]/checks_df.shape[0]
-    count_total = count_mar+count_mir
+        count_mar = round(checks_df[checks_df['mar']>0.015].shape[0]/checks_df.shape[0], 3)
+        count_mir = round(checks_df[checks_df['mir']>0.015].shape[0]/checks_df.shape[0], 3)
+        count_total = count_mar+count_mir
 
-    print("1.0",count_mar,count_mir,count_total)
+        print("1.5",count_mar,count_mir,count_total)
+        checks_result.append([start, "1.5", checks_df.shape[0], count_mar,count_mir,count_total])
+
+        count_mar = round(checks_df[checks_df['mar']>0.01].shape[0]/checks_df.shape[0], 3)
+        count_mir = round(checks_df[checks_df['mir']>0.01].shape[0]/checks_df.shape[0], 3)
+        count_total = count_mar+count_mir
+
+        print("1.0",count_mar,count_mir,count_total)
+        checks_result.append([start, "1.0", checks_df.shape[0], count_mar,count_mir,count_total])
+    else:
+        print("checks hasn't exist")
 
     if plot:
         ##################################plot#####################
@@ -190,8 +208,64 @@ def vpin_test(code, start, end, plot=False, frequence='5min',volumn_split=50,che
         ax2.plot(last_price[1:],color='blue',label='sell volume')
         ax2.set_ylabel('Price',color='blue',fontsize=18)
         ax2.plot(df.price,color='gray')
+    return checks_result
+
+def make_date_range(start_year_i=2016, end_year_i=2019,start_month=1):
+    result = []
+    for year in range(start_year_i,end_year_i,1):
+        for month in range(1,12,1):
+            for day in range(1,30,7):
+                base = str(year)+"-"+str(month)
+                start = base + "-" + str(day) + ' 9:00:00'
+                if day+7 > 30:
+                    break
+                    # end = base + "-30" + ' 15:00:00'
+                else:
+                    end = base + "-" + str(day+7) + ' 15:00:00'
+                result.append((start,end))
+                if month==2 and day>=28:
+                    break
+    return result[start_month-1:]
+
+date_ranges = make_date_range(start_month=10)
+
+resualt = []
+for date_range in date_ranges:
+    tmp = vpin_test("600419", date_range[0], date_range[1], plot=False)
+    if tmp != None:
+        resualt.extend(tmp)
+
+resualt_df=pd.DataFrame(resualt,columns=['date','type','count','mar','mir','r_total'])
+resualt_df['date'] = pd.to_datetime(resualt_df['date'], format='%Y-%m-%d %H:%M:%S')
+resualt_df['year'] =resualt_df['date'].apply(lambda x:datetime.datetime.strftime(x,'%Y'))
 
 
-vpin_test("601155", '2016-9-01 9:00:00', '2016-9-30 15:00:00', plot=True)
+pd.to_datetime('2016-3-16 15:00:00', format='%Y-%m-%d %H:%M:%S')
+
+plt.hist(resualt_df[resualt_df['type']=='2.0']['r_total'])
+plt.hist(resualt_df[resualt_df['type']=='1.5']['r_total'])
+plt.hist(resualt_df[resualt_df['type']=='1.0']['r_total'])
+
+plt.hist(resualt_df[resualt_df['type']=='2.0']['mar'])
+plt.hist(resualt_df[resualt_df['type']=='1.5']['mar'])
+plt.hist(resualt_df[resualt_df['type']=='1.0']['mar'])
+
+plt.hist(resualt_df[(resualt_df['type']=='2.0') & (resualt_df['year']=='2018')]['r_total'])
+plt.hist(resualt_df[(resualt_df['type']=='2.0') & (resualt_df['year']=='2017')]['r_total'])
+plt.hist(resualt_df[(resualt_df['type']=='2.0') & (resualt_df['year']=='2016')]['r_total'])
+
+plt.hist(resualt_df[(resualt_df['type']=='1.0') & (resualt_df['year']=='2018')]['r_total'])
+plt.hist(resualt_df[(resualt_df['type']=='1.0') & (resualt_df['year']=='2017')]['r_total'])
+plt.hist(resualt_df[(resualt_df['type']=='1.0') & (resualt_df['year']=='2016')]['r_total'])
+
+
+plt.hist(resualt_df[resualt_df['type']=='1.0']['mar'])
+plt.hist(resualt_df[resualt_df['type']=='1.0']['mir'])
+
+
+
+vpin_test("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00', plot=True)
+
+data = QA.QA_fetch_stock_min_adv("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00',frequence="5min").to_qfq().reset_index()
 
 
