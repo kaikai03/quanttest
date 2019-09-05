@@ -269,15 +269,3 @@ vpin_test("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00', plot=True)
 data = QA.QA_fetch_stock_min_adv("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00',frequence="5min").to_qfq().reset_index()
 
 
-csv_data = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\身高年龄.csv")
-csv_data.set_index(['Month','sex']).stack().to_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\身高年龄_deal.csv")
-#
-#
-data_02 = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\身高年龄.csv")
-#
-# data_25 = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\fff2-5.csv")
-#
-#
-#
-# plt.plot(data_02[data_02["sex"]==0].loc[:,['Month','3','15','50','85','97'] ].set_index(['Month']))
-# plt.plot(data_25[data_25["sex"]==0].loc[:,['Length','P3','P15','P50','P85','P97'] ].set_index(['Length']))
