@@ -7,6 +7,7 @@ import pandas as pd
 
 import backtest_base as trade
 import minRisk_SVD as SVD
+import matplotlib.pyplot as plt
 
 
 

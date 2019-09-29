@@ -13,46 +13,15 @@ np.seterr(divide='ignore', invalid='ignore')
 import sklearn.decomposition as skd
 import matplotlib.pyplot as plt
 
-# infos = QA.QA_fetch_stock_list_adv()
+infos = QA.QA_fetch_stock_list_adv()
 # result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
 
-# codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-# data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
+codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
+data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
 
 
-# data =QA.QA_fetch_stock_day_adv(['002415','601155','000735','300558'],'2017-01-05','2017-12-25').to_hfq()
+data =QA.QA_fetch_stock_day_adv(['002821','300340','300452','300482'],'2017-01-05','2017-12-25').to_hfq()
 
-# data.price_chg.values
-# data.price_chg[:, '000735'].values
-# data.price_chg['2017-01-10']
-# data.data.loc["2017-01-03","000735"]
-#
-# data.price_chg.unstack().values.T
-
-###################
-# lgR = np.log(data.close/data.pre_close)
-# lgR.plot()
-# lgR_mat = np.delete(lgR.unstack().values,0,axis=0)
-# lgR_mat.shape
-#
-# n_components = 4
-#
-# meanVal=np.mean(lgR_mat,axis=0) #按列求均值，即求各个特征的均值
-# meanlgR_mat=lgR_mat-meanVal
-# covMat = np.cov(meanlgR_mat,rowvar=0) #求协方差矩阵,return ndarray；若rowvar非0，一列代表一个样本，为0，一行代表一个样本
-#
-# eigVals,eigVects=np.linalg.eig(np.mat(covMat)) #求特征值和特征向量,特征向量是按列放的，即一列代表一个特征向量
-#
-# #argsort将x中的元素从小到大排列，提取其对应的index(索引)
-# eigValIndice=np.argsort(eigVals)            #对特征值从小到大排序
-# #print(eigValIndice)
-# n_eigValIndice=eigValIndice[-1:-(n_components+1):-1]   #最大的n个特征值的下标
-# n_eigVect=eigVects[:,n_eigValIndice]        #最大的n个特征值对应的特征向量
-# lowDDataMat=meanlgR_mat*n_eigVect               #低维特征空间的数据
-# reconMat=(lowDDataMat*n_eigVect.T)+meanVal  #重构数据
-# pd.DataFrame(lowDDataMat).plot(x=0,y=1,kind='scatter')
-
-###################
 
 ####demo#####
 
