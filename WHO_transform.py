@@ -5,8 +5,8 @@ pd.set_option('display.max_columns', 60)
 pd.set_option('display.max_rows', 5000)
 pd.set_option('display.width', 300)
 
-csv_data = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\周数据\\年龄别身高_week_origin.csv")
-csv_data.set_index(['Week','sex']).stack().to_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\周数据\\年龄别身高_week_deal.csv")
+csv_data = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\head_full.csv")
+csv_data.set_index(['Week','sex']).stack().to_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\head_deal.csv")
 #
 #
 data_02 = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\身高年龄.csv")

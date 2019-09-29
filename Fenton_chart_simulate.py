@@ -13,6 +13,11 @@ def LMS(M,L,S,Z):
     else:
         return M*math.exp(S*Z)
 
+norm.cdf(0)
+norm.cdf(0.5)
+norm.cdf(1)
+norm.cdf(1.5)
+norm.cdf(2)
 
 
 def zscore(x,M,L,S):
