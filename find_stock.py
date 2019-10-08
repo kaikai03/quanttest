@@ -38,7 +38,7 @@ codes_with_name = [(code, infos[infos.code==code].name[0]) for code in codes_in_
 data = QA.QA_fetch_stock_day_adv(code,start,end).to_hfq().price_chg
 data.index = data.index.droplevel(level=1)
 
-data = QA.EMA(data, 12)
+data = QA.EMA(data, 12)  # 平滑降低噪声
 
 for stock in codes_with_name:
     try:
@@ -47,7 +47,7 @@ for stock in codes_with_name:
         print("jump",stock)
         continue
     correlation_data.index = correlation_data.index.droplevel(level=1)
-    correlation_data = QA.EMA(correlation_data, 12)
+    correlation_data = QA.EMA(correlation_data, 12)  # 平滑降低噪声
     combine = pd.DataFrame({'x': data, 'y': correlation_data}).dropna()
 
     print(stock[0], ",", stock[1], ",", np.corrcoef(combine.x, combine.y)[0][1])

@@ -12,9 +12,11 @@ import matplotlib.finance as mpf
 
 import myfeatures as mf
 
+# from collections import Counter
+
 pd.set_option('display.max_columns', 60)
 pd.set_option('display.max_rows', 5000)
-pd.set_option('display.width', 300)
+pd.set_option('display.width', 600)
 
 
 code = '002415'
@@ -32,7 +34,7 @@ correlate_stocks = ["000687","002008","002009","002011","002055","002139","00223
 
 def get_data(code, start, end, frequences):
     if frequences == 1:
-        data = QA.QA_fetch_stock_day_adv(code, start, end).to_hfq()
+        data = QA.QA_fetch_stock_day_adv("000687", start, end).to_hfq()
     else:  # min
         data = QA.QA_fetch_stock_min_adv(code, start, end, frequences).to_hfq()
 
@@ -48,6 +50,7 @@ def get_data(code, start, end, frequences):
     data['order'] = range(data.shape[0])
     quotes = data[['order', 'open', 'high', 'low', 'close', 'date', 'volume']]
     quotes['date'] = pd.to_datetime(quotes.date).dt.strftime('%m-%d %H:%M')
+
     return quotes, ind_MACD
 
 
@@ -225,34 +228,40 @@ if 1:
 
 #######训练集采样
 
-x_simple = []
-y_label=[]
-for stock in correlate_stocks:
+x2_simple = []
+y2_label=[]
+for stock in ["000687","002008","002009","002011","002055"]:
     print("start:",stock)
-    quotes, ind_MACD = get_data(stock, '2017-11-30', '2019-12-30', 1)  # 由于需要MACD信号，需要向前推33天。
-    quotes["ret"] = (quotes.close-quotes.close.shift(1))/quotes.close.shift(1)
-    quotes["vol_chg"] = (quotes.volume-quotes.volume.shift(1))/quotes.volume.shift(1)
+    quotes, ind_MACD = get_data(stock, '2019-02-01', '2019-09-30', 1)  # 由于需要MACD信号，需要向前推33天。
+    # quotes["ret"] = (quotes.close-quotes.close.shift(1))/quotes.close.shift(1)
+    # quotes["vol_chg"] = (quotes.volume-quotes.volume.shift(1))/quotes.volume.shift(1)
     up_marks, down_marks, up2_marks, down2_marks = make_marks(quotes)
 
     for index in range(len(up_marks)):
         if index < 33: continue
-        if up_marks[index] or down_marks[index]:
+        if up_marks[index] or down_marks[index]:  # up_marks[index] or
             # print(index,1,quotes.date[index])
             tmp = []
-            tmp.extend(quotes["ret"][index-2:index+2].values)
+            tag="close"
+            if up_marks[index]:tag="high"
+            if down_marks[index]:tag="low"
+            tmp.extend(np.round(quotes[tag][index-2:index+2].values,2))
             tmp.extend(ind_MACD[index-2:index+2].MACD.values)
-            tmp.extend(quotes["vol_chg"][index-2:index+2].values)
-            x_simple.append(tmp)
-            y_label.append(1)
+            # tmp.extend(quotes["vol_chg"][index-2:index+2].values)
+            x2_simple.append(tmp)
+            y2_label.append(1)
 
-        if (up2_marks[index] and not up_marks[index]) or (down2_marks[index] and not down_marks[index]):
+        if (up2_marks[index] and not up_marks[index]) or (down2_marks[index] and not down_marks[index]):  #(up2_marks[index] and not up_marks[index]) or
             # print(index, 0,quotes.date[index])
             tmp = []
-            tmp.extend(quotes["ret"][index - 2:index + 2].values)
+            tag="close"
+            if up2_marks[index]:tag="high"
+            if down2_marks[index]:tag="low"
+            tmp.extend(np.round(quotes[tag][index - 2:index + 2].values,2))
             tmp.extend(ind_MACD[index - 2:index + 2].MACD.values)
-            tmp.extend(quotes["vol_chg"][index - 2:index + 2].values)
-            x_simple.append(tmp)
-            y_label.append(0)
+            # tmp.extend(quotes["vol_chg"][index - 2:index + 2].values)
+            x2_simple.append(tmp)
+            y2_label.append(0)
 
     break
 
@@ -304,3 +313,19 @@ def OnMouseMotion(event):
     l = lines2.pop(0);l.remove();del l
 fig.canvas.mpl_connect('motion_notify_event',OnMouseMotion)
 ############交互
+
+
+#######横向对比及网格搜索
+# clf1 = LogisticRegression(random_state=1)
+# clf2 = RandomForestClassifier(random_state=1)
+# eclf = VotingClassifier(estimators=[('lr', clf1), ('rf', clf2), ('gnb', clf3)], voting='hard')  # 无权重投票
+# eclf = VotingClassifier(estimators=[('lr', clf1), ('rf', clf2), ('gnb', clf3)],voting='soft', weights=[2,1,2]) # 权重投票
+# for clf, label in zip([clf1, clf2, clf3, eclf], ['Logistic Regression', 'Random Forest', 'naive Bayes', 'Ensemble']):
+#     scores = cross_val_score(clf,X,y,cv=5, scoring='accuracy')
+#     print("准确率: %0.2f (+/- %0.2f) [%s]" % (scores.mean(), scores.std(), label))
+#
+# from sklearn.model_selection import GridSearchCV
+# params = {'lr__C': [1.0, 100.0], 'rf__n_estimators': [20, 200],}  # 搜索寻找最优的lr模型中的C参数和rf模型中的n_estimators
+# grid = GridSearchCV(estimator=eclf, param_grid=params, cv=5)
+# grid = grid.fit(iris.data, iris.target)
+# print('最优参数：',grid.best_params_)
