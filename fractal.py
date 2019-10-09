@@ -34,7 +34,7 @@ correlate_stocks = ["000687","002008","002009","002011","002055","002139","00223
 
 def get_data(code, start, end, frequences):
     if frequences == 1:
-        data = QA.QA_fetch_stock_day_adv("000687", start, end).to_hfq()
+        data = QA.QA_fetch_stock_day_adv(code, start, end).to_hfq()
     else:  # min
         data = QA.QA_fetch_stock_min_adv(code, start, end, frequences).to_hfq()
 
@@ -228,40 +228,46 @@ if 1:
 
 #######训练集采样
 
-x2_simple = []
-y2_label=[]
-for stock in ["000687","002008","002009","002011","002055"]:
+x_simple = []
+y_label=[]
+for stock in correlate_stocks:
     print("start:",stock)
-    quotes, ind_MACD = get_data(stock, '2019-02-01', '2019-09-30', 1)  # 由于需要MACD信号，需要向前推33天。
-    # quotes["ret"] = (quotes.close-quotes.close.shift(1))/quotes.close.shift(1)
-    # quotes["vol_chg"] = (quotes.volume-quotes.volume.shift(1))/quotes.volume.shift(1)
+    quotes, ind_MACD = get_data(stock, '2017-11-01', '2019-01-30', 1)  # 由于需要MACD信号，需要向前推33天。
+    # quotes["ret"] = (quotes.low-quotes.low.shift(1))
+    quotes["vol_chg"] = (quotes.volume-quotes.volume.shift(1))/quotes.volume.shift(1)
     up_marks, down_marks, up2_marks, down2_marks = make_marks(quotes)
 
     for index in range(len(up_marks)):
         if index < 33: continue
-        if up_marks[index] or down_marks[index]:  # up_marks[index] or
+        if down_marks[index]:  # up_marks[index] or
             # print(index,1,quotes.date[index])
             tmp = []
-            tag="close"
-            if up_marks[index]:tag="high"
-            if down_marks[index]:tag="low"
-            tmp.extend(np.round(quotes[tag][index-2:index+2].values,2))
-            tmp.extend(ind_MACD[index-2:index+2].MACD.values)
+            # tag="close"
+            # if up_marks[index]:tag="high"
+            # if down_marks[index]:tag="low"
+            # tmp.extend(np.round(quotes["ret"][index-2:index+2].values,2))
+            # tmp.extend(ind_MACD[index-2:index+2].MACD.values)
+            tmp.extend(ind_MACD[index-2:index+2].MACD.values/ind_MACD[index-2:index+2].MACD.max())
+            # tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
+            # tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
             # tmp.extend(quotes["vol_chg"][index-2:index+2].values)
-            x2_simple.append(tmp)
-            y2_label.append(1)
+            x_simple.append(tmp)
+            y_label.append(1)
 
-        if (up2_marks[index] and not up_marks[index]) or (down2_marks[index] and not down_marks[index]):  #(up2_marks[index] and not up_marks[index]) or
+        if (down2_marks[index] and not down_marks[index]):  #(up2_marks[index] and not up_marks[index]) or
             # print(index, 0,quotes.date[index])
             tmp = []
-            tag="close"
-            if up2_marks[index]:tag="high"
-            if down2_marks[index]:tag="low"
-            tmp.extend(np.round(quotes[tag][index - 2:index + 2].values,2))
-            tmp.extend(ind_MACD[index - 2:index + 2].MACD.values)
-            # tmp.extend(quotes["vol_chg"][index - 2:index + 2].values)
-            x2_simple.append(tmp)
-            y2_label.append(0)
+            # tag="close"
+            # if up2_marks[index]:tag="high"
+            # if down2_marks[index]:tag="low"
+            # tmp.extend(np.round(quotes["ret"][index - 2:index + 2].values,2))
+            # tmp.extend(ind_MACD[index-2:index+2].MACD.values)
+            tmp.extend(ind_MACD[index-2:index+2].MACD.values/ind_MACD[index-2:index+2].MACD.max())
+            # tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
+            # tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
+            # tmp.extend(quotes["vol_chg"][index-2:index+2].values)
+            x_simple.append(tmp)
+            y_label.append(0)
 
     break
 
