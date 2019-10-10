@@ -73,7 +73,7 @@ y_pred=clf.predict(x2_simple)
 ############################################
 
 
-clf = MLPClassifier(solver='adam', activation='relu',hidden_layer_sizes=(120,100,100,100,50,8,2,), alpha=0.0001, batch_size='auto',max_iter=500, verbose=1)
+clf = MLPClassifier(solver='adam', activation='relu',hidden_layer_sizes=(120, 100, 2), alpha=0.0001, batch_size='auto',max_iter=500, verbose=1)
 clf.fit(x_train,y_train)
 clf.score(x_test, y_test)
 
@@ -130,4 +130,6 @@ y_pred=clf.predict(x_test)
 print(metrics.confusion_matrix(y_test, y_pred))
 print(metrics.classification_report(y_test, y_pred))
 metrics.mean_squared_error(y_test, y_pred)
+
+
 
