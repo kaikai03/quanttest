@@ -19,7 +19,7 @@ global y_label
 import torch
 
 class EncoderRNNWithVector(torch.nn.Module):
-    def __init__(self, input_size, hidden_size, out_size, n_layers=1, batch_size=1):
+    def __init__(self, input_size, hidden_size, out_size, n_layers=2, batch_size=1):
         super(EncoderRNNWithVector, self).__init__()
 
         self.input_size = input_size
@@ -64,22 +64,24 @@ _ys = y_label # []
 #     _ys.append(random.randint(0, 5))
 
 # 隐层 200，输出 6，隐层用词向量的宽度，输出用标签的值得个数 （one-hot)
-encoder_test = EncoderRNNWithVector(4, 4, 2)
+encoder_test = EncoderRNNWithVector(4, 4, 2, n_layers=1)
 
-criterion = torch.nn.CrossEntropyLoss()
+loss_func = torch.nn.CrossEntropyLoss()
 # optimizer = torch.optim.SGD(encoder_test.parameters(), lr=0.01, momentum=0.9)
 optimizer = torch.optim.Adam(encoder_test.parameters(), lr=0.01 )
+encoder_hidden = encoder_test.init_hidden()
 
-for i in range(_xs.size()[0]):
-    encoder_hidden = encoder_test.init_hidden()
+for i in range(_xs.size()[0]):  # _xs.size()[0]
+    # encoder_hidden = encoder_test.init_hidden()
     input_data = torch.autograd.Variable(_xs[i])
     output_labels = torch.autograd.Variable(torch.LongTensor([_ys[i]]))
     #print(output_labels)
 
-    encoder_outputs, encoder_hidden = encoder_test(input_data, encoder_hidden)
+    encoder_outputs, hidden = encoder_test(input_data, encoder_hidden)
+    encoder_hidden = hidden.detach()
+    loss = loss_func(encoder_outputs, output_labels)
 
     optimizer.zero_grad()
-    loss = criterion(encoder_outputs, output_labels)
     loss.backward()
     optimizer.step()
 
@@ -87,3 +89,12 @@ for i in range(_xs.size()[0]):
 
 # Save the Model
 # torch.save(rnn.state_dict(), 'rnn.pkl')
+
+with torch.no_grad():
+    # input_data = torch.autograd.Variable(torch.tensor([ 8.4000,  8.3900,  8.3400,  8.3500]))
+    predicted = encoder_test(_xs[1],encoder_test.init_hidden())[0].detach()
+    print(predicted)
+    los = loss_func(predicted, torch.LongTensor([_ys[1]]))
+    print(los)
+
+
