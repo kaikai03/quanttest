@@ -234,7 +234,7 @@ y_label=[]
 for stock in correlate_stocks_all:
     print("start:",stock)
     quotes, ind_MACD = get_data(stock, '2017-11-01', '2019-01-30', 1)  # 由于需要MACD信号，需要向前推33天。
-    quotes["ret"] = (quotes.low-quotes.low.shift(1))/quotes.low.shift(1)
+    # quotes["ret"] = (quotes.low-quotes.low.shift(1))/quotes.low.shift(1)
     # quotes["vol_chg"] = (quotes.volume-quotes.volume.shift(1))/quotes.volume.shift(1)
     up_marks, down_marks, up2_marks, down2_marks = make_marks(quotes)
 
@@ -243,14 +243,14 @@ for stock in correlate_stocks_all:
         if down_marks[index]:  # up_marks[index] or
             # print(index,1,quotes.date[index])
             tmp = []
-            # tag="close"
-            # if up_marks[index]:tag="high"
-            # if down_marks[index]:tag="low"
-            tmp.extend(np.round(quotes["ret"][index-2:index+2].values,2))
+            tag="close"
+            if up_marks[index]:tag="high"
+            if down_marks[index]:tag="low"
+            tmp.extend(np.round(quotes[tag][index-2:index+2].values,2))
             # tmp.extend(ind_MACD[index-2:index+2].MACD.values)
             # tmp.extend(ind_MACD[index-2:index+2].MACD.values/ind_MACD[index-2:index+2].MACD.max())
-            tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
-            tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
+            # tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
+            # tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
             # tmp.extend(quotes["vol_chg"][index-2:index+2].values)
             x_simple.append(tmp)
             y_label.append(1)
@@ -258,14 +258,14 @@ for stock in correlate_stocks_all:
         if (down2_marks[index] and not down_marks[index]):  #(up2_marks[index] and not up_marks[index]) or
             # print(index, 0,quotes.date[index])
             tmp = []
-            # tag="close"
-            # if up2_marks[index]:tag="high"
-            # if down2_marks[index]:tag="low"
-            tmp.extend(np.round(quotes["ret"][index - 2:index + 2].values,2))
+            tag="close"
+            if up2_marks[index]:tag="high"
+            if down2_marks[index]:tag="low"
+            tmp.extend(np.round(quotes[tag][index - 2:index + 2].values,2))
             # tmp.extend(ind_MACD[index-2:index+2].MACD.values)
             # tmp.extend(ind_MACD[index-2:index+2].MACD.values/ind_MACD[index-2:index+2].MACD.max())
-            tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
-            tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
+            # tmp.append(np.round(ind_MACD[index-2:index+2].MACD.skew(),2))
+            # tmp.append(np.round(quotes.volume[index-2:index+2].skew(),2))
             # tmp.extend(quotes["vol_chg"][index-2:index+2].values)
             x_simple.append(tmp)
             y_label.append(0)
@@ -286,6 +286,19 @@ ax1.scatter(quotes[up2_marks].order, quotes[up2_marks].high * 1.009, marker='^',
 ax1.scatter(quotes[down_marks].order, quotes[down_marks].low * 0.997, marker='v', c="black")
 ax1.scatter(quotes[up_marks].order, quotes[up_marks].high * 1.002, marker='^', c="black")
 
+fig = plt.figure("--", figsize=(16, 8))
+ax1 = fig.add_subplot(111)
+red_count = 0
+for i,y in enumerate(y_label):
+    x_np = np.array(x_simple[i])
+    x_np = x_np/x_np.max()
+    if y == 0:
+        ax1.scatter([1,2,3,4], x_np, marker="_", c="blue")
+    else:
+        ax1.scatter([1.5,2.5,3.5,4.5], x_np, marker="_", c="red")
+        red_count += 1
+
+    if red_count==500:break
 
 ##############################################################################
 
