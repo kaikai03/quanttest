@@ -7,12 +7,12 @@ import seaborn as sns
 
 import matplotlib.pyplot as plt
 
-# code_list = ['000001', '000002', '000004', '600000',
-#              '600536', '000936', '002023', '600332',
-#              '600398', '300498', '603609', '300673']
-code_list = QA.QA_fetch_stock_block_adv().code[0:2]
+code_list = ['000001', '000002', '000004', '600000',
+             '600536', '000936', '002023', '600332',
+             '600398', '300498', '603609', '300673']
+code_list = QA.QA_fetch_stock_block_adv().code[10:12]
 start_date = '2017-01-01'
-end_date = '2017-01-31'
+end_date = '2017-06-30'
 
 
 
@@ -56,7 +56,7 @@ Account.reset_assets(1000000)
 
 # get data from mongodb
 data = QA.QA_fetch_stock_day_adv(code_list, start_date, end_date)
-data = data.to_qfq()
+data = data.to_hfq()
 
 # add indicator
 ind = data.add_func(QSDD)
@@ -99,7 +99,6 @@ def sell_item_mount(account, broker, item, amount):
         amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
     )
     deal_order(account, broker, item, order)
-
 
 for items in data_forbacktest.panel_gen:
     for item in items.security_gen:

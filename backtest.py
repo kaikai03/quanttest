@@ -26,9 +26,9 @@ import  matplotlib
 import QUANTAXIS as QA
 from QUANTAXIS import QA_Backtest as QB
 import pandas as pd
-pd.set_option('display.line_width', 300)
 pd.set_option('display.max_columns', 60)
 pd.set_option('display.max_rows', 5000)
+pd.set_option('display.width', 600)
 import numpy as np
 
 import analysis_tools as at
@@ -176,7 +176,7 @@ def baseData():
     QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').get_bar('000001','2017-09-05', True).data
     QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').plot()  # .query('volume>1')
     QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').to_hfq().data
-QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').to_hfq().plot()
+    QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').to_hfq().plot()
 
     days =QA.QA_fetch_stock_day_adv(['000001'],'2016-01-01','2017-12-30').data
     # days =QA.QA_fetch_index_day_adv(['000001','000004','000006'],'2018-01-01','2018-12-30').data
@@ -192,7 +192,8 @@ QA.QA_fetch_stock_day_adv('000001','2017-09-01','2017-10-01').to_hfq().plot()
     at.drawplot_df(days)
 
     days.query('close>9.39')
-days.index
+    days.index
+    ß
     at.drawplot_df(days,split=True)
     at.drawplot_df(days)
     webbrowser.open('file://'+os.path.realpath('QA_stock_day_None_hfq.html'))
@@ -212,4 +213,3 @@ days.index
     at.hurst_RS(s0001)
     at.hurst(s0001["close"])
     pass
-

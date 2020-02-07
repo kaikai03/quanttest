@@ -38,7 +38,7 @@ def multi_test(codes, date_ranges):
             resualt = tortiose_one(code, date_range)
             resualts.append((code,date_range,resualt['a_r'],resualt['bm_ar'],resualt['alpha']))
 
-multi_test([code], [('2019-01-01','2019-12-31'),('2018-01-01','2018-12-31'),
+multi_test(code_list, [('2019-01-01','2019-12-31'),('2018-01-01','2018-12-31'),
                        ('2017-01-01','2017-12-31'),('2016-01-01','2016-12-31')])
 
 
@@ -151,7 +151,7 @@ def tortiose_one(code,date_range,init_cash=100000):
 resualt = tortiose_one(code,(start_date,end_date))
 
 account = resualt['account']
-Risk = resualt['risk']
+risk = resualt['risk']
 
 resualt['risk'].plot_assets_curve()
 
@@ -160,19 +160,19 @@ print(account.history_table)
 print(account.daily_hold)
 
 # create Risk analysis
-Risk = QA.QA_Risk(account,benchmark_code=code,benchmark_type=MARKET_TYPE.STOCK_CN)
-print(Risk.message)
-print(Risk.assets)
-Risk.market_data.data
+risk = QA.QA_Risk(account, benchmark_code=code, benchmark_type=MARKET_TYPE.STOCK_CN)
+print(risk.message)
+print(risk.assets)
+risk.market_data.data
 
-fig = Risk.assets.plot()
+fig = risk.assets.plot()
 fig.plot()
 # Risk.benchmark_assets.plot()
-fig = Risk.plot_assets_curve()
+fig = risk.plot_assets_curve()
 fig.plot()
-fig = Risk.plot_dailyhold()
+fig = risk.plot_dailyhold()
 fig.plot()
-fig = Risk.plot_signal()
+fig = risk.plot_signal()
 fig.plot()
 
 plt.show()

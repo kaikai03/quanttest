@@ -122,8 +122,8 @@ def vpin_test(code, start, end, plot=False, frequence='5min',volumn_split=50,che
 
     ## calculate the cdf vpin
     def cdf(x):
-        miu=np.nanmean(vpin)
-        sigma=np.nanstd(vpin)
+        miu=np.nanmean(x)
+        sigma=np.nanstd(x)
         cdf=0.5*(1+sp.erf((x-miu)/(2**0.5)/sigma))
         return (cdf)
 
@@ -264,7 +264,7 @@ plt.hist(resualt_df[resualt_df['type']=='1.0']['mir'])
 
 
 
-vpin_test("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00', plot=True)
+vpin_test("601168", '2016-3-15 9:00:00', '2016-3-16 15:00:00', plot=True)
 
 data = QA.QA_fetch_stock_min_adv("601155", '2016-3-15 9:00:00', '2016-3-16 15:00:00',frequence="5min").to_qfq().reset_index()
 

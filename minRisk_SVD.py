@@ -13,14 +13,17 @@ np.seterr(divide='ignore', invalid='ignore')
 import sklearn.decomposition as skd
 import matplotlib.pyplot as plt
 
-infos = QA.QA_fetch_stock_list_adv()
-# result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
-
-codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
-data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
-
-
-data =QA.QA_fetch_stock_day_adv(['002821','300340','300452','300482'],'2017-01-05','2017-12-25').to_hfq()
+# infos = QA.QA_fetch_stock_list_adv()
+# # result = pd.merge(stock_diff,infos.loc[codes]['name'], left_index=True,right_index=True)
+#
+# QA.QA_fetch_stock_block_adv().get_block('雄安新区').data
+#
+# codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
+# QA.QA_fetch_stock_block_adv().data
+# data =QA.QA_fetch_stock_day_adv(codes[1:10],'2017-01-05','2017-12-25').to_hfq()
+#
+#
+# data =QA.QA_fetch_stock_day_adv(['002821','300340','300452','300482'],'2017-01-05','2017-12-25').to_hfq()
 
 
 ####demo#####
