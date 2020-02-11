@@ -91,3 +91,4 @@ lost_too_much2 = prc_uns2.columns[prc_uns2.isnull().sum() > prc_uns2.shape[0]*0.
 prc_uns2.drop(lost_too_much2, axis=1,inplace=True)
 prc_uns2 = prc_uns2.dropna()
 cor_mat2 = np.corrcoef(QA.EMA(prc_uns2, 1).dropna(),rowvar=False)
+
