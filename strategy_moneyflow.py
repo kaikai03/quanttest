@@ -41,7 +41,10 @@ bar_size = datetime.timedelta(seconds=60*60*24)
 time_group = pd.Grouper(level=0, freq=pd.Timedelta(bar_size))
 a.groupby([time_group,"code"]).apply(np.sum)
 
-
+#成交量/流通总量 = 换手率
+# 资金流动强度  sosff = (p_i - p)/p * Q_i/Q = (AP - p)/p * TR
+# p_i现价 p参照价  q_i成交量,q周期内总流通  AP周期内均价   TR换手率
+# 价格可考虑加权移动平均，消除滞后性误差
 
 
 
