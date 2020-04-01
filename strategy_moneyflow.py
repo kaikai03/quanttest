@@ -15,7 +15,7 @@ pd.set_option('display.max_rows', 100)
 pd.set_option('display.width', 300)
 pd.set_option('display.float_format', lambda x: '%.4f' % x)
 
-codes = ['002415', '002416']
+codes = ['002415', '002416', '002417']
 start_date = '2018-01-15'
 end_date = '2018-01-21'
 # init_cash = 1000000
@@ -23,15 +23,16 @@ data = QA.QA_fetch_stock_day_adv(codes, start_date, end_date).to_hfq()
 data = QA.QA_fetch_stock_min_adv(codes, start_date, end_date, frequence='5min').to_hfq()
 data.data
 data.index
+data.data.shape
 
 def MF(data_, hour=1):
-    codes_ = list(data_.index.levels[1])
-    res_adv = QA.QA_fetch_financial_report_adv(codes_, '2019-09-30', ltype='EN')
+    code_ = data_.iloc[0:1].index.get_level_values(1)[0]
+    res_adv = QA.QA_fetch_financial_report_adv(code_, '2019-09-30', ltype='EN')
     # 国内一般只对可流通部分的股票计算换手率，一般在1~2.5，3为分界，表示活跃
-    listed_shares = res_adv.get_key(codes_, '2019-09-30', 'listedAShares')
+    listed_shares = res_adv.get_key(code_, '2019-09-30', 'listedAShares')
     # freeCirculationStock, totalCapital
 
-    # print("ffffffffffffffffffffffffffff",codes_)
+    # print("ffffffffffffffffffffffffffff",data_)
 
     ret_rate = (data_.close - data_.preclose)/data_.preclose
     direction = np.sign(ret_rate)
@@ -41,7 +42,7 @@ def MF(data_, hour=1):
     moneyflow = (data_.amount * direction).groupby([time_group, "code"]).apply(np.sum)
 
     exchange_rate = data_.volume.groupby([time_group, "code"]) \
-        .apply(lambda x: np.sum(x) / listed_shares[:, x.index[0][1]][0])
+        .apply(lambda x: np.sum(x) / listed_shares)
 
     sosff = ret_rate.groupby([time_group, "code"]) \
         .apply(lambda x: np.sum(x) * exchange_rate[:, x.index[0][1]][0]) * 100
@@ -49,10 +50,10 @@ def MF(data_, hour=1):
     ic = abs(moneyflow) / data_.amount.groupby([time_group, "code"]).apply(np.sum)
 
     mfp = moneyflow / \
-        (data_.close.groupby([time_group, "code"]).apply(lambda x: np.average(x) * listed_shares[:, x.index[0][1]][0]))
+        (data_.close.groupby([time_group, "code"]).apply(lambda x: np.average(x) * listed_shares))
 
     mfl = (data_.close.groupby([time_group, "code"])
-           .apply(lambda x: np.average(x) * listed_shares[:, x.index[0][1]][0])) \
+           .apply(lambda x: np.average(x) * listed_shares)) \
         .diff(1) / moneyflow
 
     return pd.DataFrame({'MF': moneyflow, 'RET': ret_rate.groupby([time_group, "code"]).apply(np.sum),
@@ -68,12 +69,16 @@ final.plot()
 final["RET"].plot()
 final["MF"].plot()
 
-data.groupby(level=1, sort=False).apply(MF,24)
+data.groupby(['code'], sort=False).apply(MF,24)
 
 final.loc[pd.IndexSlice[:, '002415'], :]
 final.loc[pd.IndexSlice[:, '002415'], "MF"]
 
 np.corrcoef(final.loc[pd.IndexSlice[:, '002415'], "MF"], final.loc[pd.IndexSlice[:, '002415'], "RET"])
+
+
+
+
 
 # 成交量/流通总量 = 换手率
 # 资金流动强度  sosff = (p_i - p)/p * Q_i/Q = (AP - p)/p * TR
