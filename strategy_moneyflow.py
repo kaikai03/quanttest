@@ -15,7 +15,7 @@ pd.set_option('display.max_rows', 100)
 pd.set_option('display.width', 300)
 pd.set_option('display.float_format', lambda x: '%.4f' % x)
 
-codes = ['002415', '002416']
+codes = ['002415', '002416', '002417']
 start_date = '2018-01-15'
 end_date = '2018-01-21'
 # init_cash = 1000000
@@ -23,6 +23,15 @@ data = QA.QA_fetch_stock_day_adv(codes, start_date, end_date).to_hfq()
 data = QA.QA_fetch_stock_min_adv(codes, start_date, end_date, frequence='5min').to_hfq()
 data.data
 data.index
+
+def get_company_name(codes):
+    infos = QA.QA_fetch_stock_list_adv()
+    return [(code, infos[infos.code==code].name[0]) for code in codes]
+
+QA.QA_fetch_stock_block_adv().block_name
+codes = QA.QA_fetch_stock_block_adv().get_block('上证50').code
+get_company_name(codes)
+
 
 def MF(data_, hour=1):
     codes_ = list(data_.index.levels[1])
@@ -55,25 +64,40 @@ def MF(data_, hour=1):
            .apply(lambda x: np.average(x) * listed_shares[:, x.index[0][1]][0])) \
         .diff(1) / moneyflow
 
-    return pd.DataFrame({'MF': moneyflow, 'RET': ret_rate.groupby([time_group, "code"]).apply(np.sum),
+    return pd.DataFrame({'MF': moneyflow,
+                         'CLOSE': data_.close.groupby([time_group, "code"]).apply(lambda x: x[-1]),
+                         'RET': ret_rate.groupby([time_group, "code"]).apply(np.sum),
                        "ExcR": exchange_rate, "SOSFF": sosff, "MFP": mfp, "MFL": mfl, "IC": ic})
 
 
-ind = data.add_func(MF,24).pivot_table(index=['datetime', 'code'])
-
+ind = data.add_func(MF, 0.5).pivot_table(index=['datetime', 'code'])
 final = ind
+
 final["MF"] = (final["MF"] - final["MF"].mean()) / final["MF"].std()
 final["MFL"] = (final["MFL"] - final["MFL"].mean()) / final["MFL"].std()
 final.plot()
 final["RET"].plot()
 final["MF"].plot()
 
-data.groupby(level=1, sort=False).apply(MF,24)
+data.groupby(level=1, sort=False).apply(MF, 24)
 
 final.loc[pd.IndexSlice[:, '002415'], :]
 final.loc[pd.IndexSlice[:, '002415'], "MF"]
 
-np.corrcoef(final.loc[pd.IndexSlice[:, '002415'], "MF"], final.loc[pd.IndexSlice[:, '002415'], "RET"])
+for code in final.index.levels[1]:
+    print(code, np.corrcoef(final.loc[pd.IndexSlice[:, code], "MF"], final.loc[pd.IndexSlice[:, code], "RET"].shift(-1).fillna(0))[0][1])
+
+
+final.loc[pd.IndexSlice[:, '002415'], ["MF","RET"]]\
+    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 12))),'code'])\
+    .apply(lambda x: np.corrcoef(x['MF'], x['RET'])[0][1])
+
+
+data.close.groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 0.5))),'code'])\
+    .apply(lambda x: x[-2])
+
+
+final.pivot_table(index=['code','datetime'])
 
 # 成交量/流通总量 = 换手率
 # 资金流动强度  sosff = (p_i - p)/p * Q_i/Q = (AP - p)/p * TR
