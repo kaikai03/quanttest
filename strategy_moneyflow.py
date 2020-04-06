@@ -6,6 +6,9 @@ import numpy as np
 
 import datetime
 
+from sklearn.linear_model import LogisticRegression
+from sklearn import linear_model
+
 import matplotlib.pyplot as plt
 
 import backtest_base as trade
@@ -15,9 +18,11 @@ pd.set_option('display.max_rows', 100)
 pd.set_option('display.width', 300)
 pd.set_option('display.float_format', lambda x: '%.4f' % x)
 
+codes = ['002415']
 codes = ['002415', '002416', '002417']
+
 start_date = '2018-01-15'
-end_date = '2018-01-21'
+end_date = '2018-06-21'
 # init_cash = 1000000
 data = QA.QA_fetch_stock_day_adv(codes, start_date, end_date).to_hfq()
 data = QA.QA_fetch_stock_min_adv(codes, start_date, end_date, frequence='5min').to_hfq()
@@ -105,14 +110,21 @@ final.loc[pd.IndexSlice[:, '002415'], ["MFP","RET"]]\
     .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
     .apply(np.sum)
 
-final.loc[pd.IndexSlice[:, '002415'], ["MF","RET"]]\
-    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
-    .apply(np.std)
+speed = final.loc[pd.IndexSlice[:, '002415'],"SPEED"][0::2]
+cur_ret = final.loc[pd.IndexSlice[:, '002415'],"RET"][0::2]
+mfp = final.loc[pd.IndexSlice[:, '002415'],"MFP"][0::2]
 
-final.loc[pd.IndexSlice[:, '002415'], ["MF","RET"]]\
-    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
-    .apply(np.sum)
+ret = final.loc[pd.IndexSlice[:, '002415'],"RET"][1::2]
 
+ret[ret>=0]=1
+ret[ret<0]=0
+ret = list(ret)
+x = [[x, cur_ret[i], mfp[i]] for i, x in enumerate(speed)]
+
+reg = linear_model.LogisticRegression()
+reg.fit(x, ret)
+reg.score(x, ret)
+reg.predict(x)
 
 data.close.groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 0.5))),'code'])\
     .apply(lambda x: x[-2])
