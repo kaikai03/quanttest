@@ -5,8 +5,8 @@ pd.set_option('display.max_columns', 60)
 pd.set_option('display.max_rows', 5000)
 pd.set_option('display.width', 300)
 
-csv_data = pd.read_csv("C:\\Users\\faker\\Desktop\\儿童生长发育评估\\data\\九省市0-36_头围.csv", engine='python')
-csv_data.set_index(['month','sex']).stack().to_csv("C:\\Users\\faker\\Desktop\\儿童生长发育评估\\data\\九省市0-36_头围_deal.csv")
+csv_data = pd.read_csv("E:\\工作文档\\2016医疗\\DRIMS\\data\\九省市\\九省市_最终数据\\九省市0-36_头围.csv", engine='python')
+csv_data.set_index(['month','sex']).stack().to_csv("E:\\工作文档\\2016医疗\\DRIMS\\data\\九省市\\九省市_最终数据\\九省市0-36_头围_deal.csv")
 #
 #
 data_02 = pd.read_csv("C:\\Users\\kai_k_000.ABA\\Desktop\\身高年龄.csv")
