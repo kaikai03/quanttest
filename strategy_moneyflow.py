@@ -49,6 +49,13 @@ def MF(data_, hour=1):
     time_group = pd.Grouper(level=0, freq=pd.Timedelta(bar_size))
     moneyflow = (data_.amount * direction).groupby([time_group, "code"]).apply(np.sum)
 
+    moneyflow_in = (data_.amount * direction).groupby([time_group, "code"]).apply(lambda x: np.sum(x[x > 0]))
+    moneyflow_out = (data_.amount * direction).groupby([time_group, "code"]).apply(lambda x: np.sum(x[x < 0]))
+
+    speed = data_.amount.groupby([time_group, "code"])\
+        .apply(lambda x: np.sum(np.diff(np.divide(np.subtract(x[1:], x[0:-1]),x[0:-1]))))
+
+
     exchange_rate = data_.volume.groupby([time_group, "code"]) \
         .apply(lambda x: np.sum(x) / listed_shares[:, x.index[0][1]][0])
 
@@ -65,12 +72,15 @@ def MF(data_, hour=1):
         .diff(1) / moneyflow
 
     return pd.DataFrame({'MF': moneyflow,
+                         'MF_IN': moneyflow_in,
+                         'MF_OUT': moneyflow_out,
+                         'SPEED': speed,
                          'CLOSE': data_.close.groupby([time_group, "code"]).apply(lambda x: x[-1]),
                          'RET': ret_rate.groupby([time_group, "code"]).apply(np.sum),
-                       "ExcR": exchange_rate, "SOSFF": sosff, "MFP": mfp, "MFL": mfl, "IC": ic})
+                         "ExcR": exchange_rate, "SOSFF": sosff, "MFP": mfp, "MFL": mfl, "IC": ic})
 
 
-ind = data.add_func(MF, 0.5).pivot_table(index=['datetime', 'code'])
+ind = data.add_func(MF, 4).pivot_table(index=['datetime', 'code'])
 final = ind
 
 final["MF"] = (final["MF"] - final["MF"].mean()) / final["MF"].std()
@@ -81,16 +91,27 @@ final["MF"].plot()
 
 data.groupby(level=1, sort=False).apply(MF, 24)
 
-final.loc[pd.IndexSlice[:, '002415'], :]
-final.loc[pd.IndexSlice[:, '002415'], "MF"]
+final.loc[pd.IndexSlice[:, '002417'],:]
+
+
+np.subtract(final.loc[pd.IndexSlice[:, '601012'],"MFP"][1::2], final.loc[pd.IndexSlice[:, '601012'],"MFP"][::2])
 
 for code in final.index.levels[1]:
-    print(code, np.corrcoef(final.loc[pd.IndexSlice[:, code], "MF"], final.loc[pd.IndexSlice[:, code], "RET"].shift(-1).fillna(0))[0][1])
+    print(code, np.corrcoef(np.subtract(final.loc[pd.IndexSlice[:, code],"MFP"][1::2]*0.1, final.loc[pd.IndexSlice[:, code],"MFP"][::2]),
+                            final.loc[pd.IndexSlice[:, code], "RET"][1::2])[0][1])
 
+
+final.loc[pd.IndexSlice[:, '002415'], ["MFP","RET"]]\
+    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
+    .apply(np.sum)
 
 final.loc[pd.IndexSlice[:, '002415'], ["MF","RET"]]\
-    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 12))),'code'])\
-    .apply(lambda x: np.corrcoef(x['MF'], x['RET'])[0][1])
+    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
+    .apply(np.std)
+
+final.loc[pd.IndexSlice[:, '002415'], ["MF","RET"]]\
+    .groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 2))),'code'])\
+    .apply(np.sum)
 
 
 data.close.groupby([pd.Grouper(level=0, freq=pd.Timedelta(datetime.timedelta(seconds=60 * 60 * 0.5))),'code'])\
