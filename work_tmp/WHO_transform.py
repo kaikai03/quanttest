@@ -116,6 +116,7 @@ head = {
     "col_53": "狭窄段长度"
 }
 
+csv_data = pd.read_excel("C:\\Users\\fakeQ\\Desktop\\a_test_z_report.xlsx")
 csv_data = pd.read_excel("C:\\Users\\fakeQ\\Desktop\\a_test_z_report_tmp.xlsx")
 chaoDesc = csv_data["chaoDesc"]
 del csv_data["chaoDesc"]
@@ -128,15 +129,19 @@ del csv_data["id"]
 csv_data.rename(columns=head,inplace=True)
 
 stack_data = csv_data.stack()
+stack_data_full = csv_data.fillna("NULL").stack()
 final = []
-for index in range(len(stack_data.index.levels[0])):
+for index in range(len(stack_data.index.levels[0])-1):
     # print("\n\n\n",stack_data.loc[index])
     items = stack_data.loc[index]
-    content = ""
+    items_full = stack_data_full.loc[index]
+    content, content_full = "",""
     for key in items.keys():
-        content += key + " : " + items[key]+'\n'
+        content += key + " : " + items[key] + '\n'
+    for key in items_full.keys():
+        content_full += key + " : " + items_full[key]+'\n'
     print(index, content, '\n')
-    final.append({'chaoDesc':chaoDesc[index],'content':content})
+    final.append({'chaoDesc': chaoDesc[index], 'content': content, 'content_full': content_full})
 
 pd.DataFrame(final).to_excel("C:\\Users\\fakeQ\\Desktop\\a_test_z_report_finish.xlsx")
 
