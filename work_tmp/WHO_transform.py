@@ -48,20 +48,53 @@ plt.plot(data[data["sex"]==0].loc[:,['Length','P3','P15','P50','P85','P97'] ].se
 ####################################odt文件##########################################
 import os
 import re
+from odf import text, teletype
+from odf.opendocument import load
 
-for root, dirs, files in os.walk("F:\\Cache\\qt\\35331963\\FileRecv\\20200608\\20200608"):
+result_list = []
+for root, dirs, files in os.walk("F:\\Cache\\qt\\35331963\\FileRecv\\20200608\\20200608\\"):
     for f in files:
-        if 'htm' in f:
-            with open(os.path.join(root, f),'r') as op:
-                line = op.readlines()
-                m = re.findall(r'<font size="2" >.*?</font>', line[0], re.I)
-                for i, item in enumerate(m):
-                    if '年' in item:
-                        age = m[i + 1].replace('<font size="2" >', '').replace('</font>', '')
-                        if int(age) > 20:
-                            print(os.path.join(root, f))
-                            print(age)
-                        break
+        # if 'htm' in f:
+        #     with open(os.path.join(root, f),'r') as op:
+        #         line = op.readlines()
+        #         m = re.findall(r'<font size="2" >.*?</font>', line[0], re.I)
+        #         for i, item in enumerate(m):
+        #             if '年' in item:
+        #                 age = m[i + 1].replace('<font size="2" >', '').replace('</font>', '')
+        #                 if int(age) > 20:
+        #                     print(os.path.join(root, f))
+        #                     print(age)
+        #                 break
+        jump_blank_space_count = 0
+        if 'odt' in f:
+            textdoc = load(os.path.join(root, f))
+            allparas = textdoc.getElementsByType(text.P)
+            # teletype.extractText(allparas[0])
+            # print('textdoc',textdoc)
+            # print('allparas', allparas)
+            # print('extract1', teletype.extractText(allparas[1]))
+            # print('ext', teletype.extractText(allparas[1]),teletype.extractText(allparas[7]))
+
+            for i,t in enumerate(allparas):
+                content = teletype.extractText(t)
+            #     print(i,'---',content)
+            #     if '超声提示：' == content:
+            #         jump_blank_space_count = 3
+            #     if jump_blank_space_count != 0:
+            #         if len(content) == 0:
+            #             jump_blank_space_count -= 1
+            #         else:
+            #             print(teletype.extractText(allparas[1]),content)
+
+                if '合并' in content:
+                    print(teletype.extractText(allparas[1]), content)
+                    result_list.append(teletype.extractText(allparas[1])+":"+content)
+    print('---------------------')
+
+print(set(result_list))
+
+
+
 
 #################################a_test_z_report#############################################
 import pandas as pd
