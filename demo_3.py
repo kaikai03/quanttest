@@ -11,7 +11,7 @@ pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
 
 # 通过板块取代码
-codes = QA.QA_fetch_stock_block_adv().get_block(['生物医药','化学制药']).code
+codes = QA.QA_fetch_stock_block_adv().get_block(['深证300']).code
 for i in QA.QA_fetch_stock_block_adv().block_name:print(i)
 
 # 取得股票信息
